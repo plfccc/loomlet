@@ -21,10 +21,15 @@ export const DASHBOARD_TIMEOUTS = {
   runCommand: 30_000,
 };
 
-export const STATE_DIR_NAME = '.pikiloom';
+export const STATE_DIR_NAME = '.loomlet';
+// The env prefix stays PIKILOOM_: dozens of reads across the tree spell the variable names out
+// as literals (process.env.PIKILOOM_*), so renaming the prefix constant alone would silently
+// break them. LOOMLET_* is accepted as an alias and hydrated onto PIKILOOM_* at startup.
 export const ENV_PREFIX = 'PIKILOOM_';
-export const LEGACY_STATE_DIR_NAMES = ['.pikiclaw'] as const;
-export const LEGACY_ENV_PREFIXES = ['PIKICLAW_'] as const;
+// Renaming the state dir is a one-way migration handled by migrateLegacyStateDir(): the first
+// launch renames ~/<legacy> to ~/.loomlet, so existing config/sessions/credentials carry over.
+export const LEGACY_STATE_DIR_NAMES = ['.pikiloom', '.pikiclaw'] as const;
+export const LEGACY_ENV_PREFIXES = ['LOOMLET_', 'PIKICLAW_'] as const;
 
 export const MANAGED_BROWSER_PROFILE_SUBPATH = path.join(STATE_DIR_NAME, 'browser', 'chrome-profile');
 
@@ -91,50 +96,10 @@ export const FEISHU_LIMITS = {
 
 export const FEISHU_BOT_CARD_MAX = 25_000;
 
-export const WEIXIN_LIMITS = {
-  maxMessageLength: 1200,
-  longPollTimeout: 35_000,
-  maxRetryDelay: 60_000,
-};
-
-export const SLACK_LIMITS = {
-  maxMessageLength: 35_000,
-  fileMaxBytes: 20 * 1024 * 1024,
-  maxRetryDelay: 60_000,
-  initialRetryDelay: 3_000,
-};
-
-export const DISCORD_LIMITS = {
-  maxMessageLength: 1900,
-  fileMaxBytes: 20 * 1024 * 1024,
-  maxRetryDelay: 60_000,
-  initialRetryDelay: 3_000,
-};
-
-export const DINGTALK_LIMITS = {
-  maxMessageLength: 5_000,
-  maxRetryDelay: 60_000,
-  initialRetryDelay: 3_000,
-};
-
-export const WECOM_LIMITS = {
-  maxMessageLength: 4_000,
-  heartbeatInterval: 30_000,
-  maxRetryDelay: 60_000,
-  initialRetryDelay: 1_000,
-  defaultEndpoint: 'wss://openws.work.weixin.qq.com/wssvr/',
-};
-
 export const VALIDATION_TIMEOUTS = {
   feishuDefault: 15_000,
   feishuBotInfo: 5_000,
   telegramToken: 8_000,
-  weixinDefault: 8_000,
-  weixinQrPoll: 35_000,
-  slackDefault: 8_000,
-  discordDefault: 8_000,
-  dingtalkDefault: 8_000,
-  wecomDefault: 8_000,
 };
 
 export const AGENT_UPDATE_TIMEOUTS = {

@@ -335,7 +335,7 @@ export function renderSkillsListHtml(d: SkillsListData): string {
   ];
 
   if (!d.skills.length) {
-    lines.push('', '<i>No project skills found in .pikiloom/skills/ or .claude/commands/.</i>');
+    lines.push('', '<i>No project skills found in .loomlet/skills/ or .claude/commands/.</i>');
     return lines.join('\n');
   }
 

@@ -5,7 +5,7 @@ import type { Agent } from '../../agent/index.js';
 import { STATE_DIR_NAME, USER_CONFIG_SYNC_DEFAULT_INTERVAL_MS } from '../constants.js';
 import { expandTilde } from '../platform.js';
 
-export type ChannelName = 'telegram' | 'feishu' | 'weixin' | 'slack' | 'discord' | 'dingtalk' | 'wecom';
+export type ChannelName = 'telegram' | 'feishu';
 
 export interface McpServerConfig {
   type?: 'stdio' | 'http';
@@ -54,10 +54,6 @@ export interface UserConfig {
   claudeAccessMode?: 'subscription' | 'api';
   codexModel?: string;
   codexReasoningEffort?: string;
-  geminiModel?: string;
-  geminiReasoningEffort?: string;
-  hermesModel?: string;
-  hermesReasoningEffort?: string;
   workdir?: string;
   workspaces?: WorkspaceEntry[];
   telegramBotToken?: string;
@@ -66,17 +62,6 @@ export interface UserConfig {
   feishuAppId?: string;
   feishuAppSecret?: string;
   feishuKnownChatIds?: string[];
-  weixinBaseUrl?: string;
-  weixinBotToken?: string;
-  weixinAccountId?: string;
-  slackBotToken?: string;
-  slackAppToken?: string;
-  discordBotToken?: string;
-  dingtalkClientId?: string;
-  dingtalkClientSecret?: string;
-  wecomBotId?: string;
-  wecomBotSecret?: string;
-  wecomEndpoint?: string;
   browserEnabled?: boolean;
   browserHeadless?: boolean;
   peekabooEnabled?: boolean;
@@ -125,17 +110,6 @@ const MANAGED_ENV_KEYS = [
   'TELEGRAM_ALLOWED_CHAT_IDS',
   'FEISHU_APP_ID',
   'FEISHU_APP_SECRET',
-  'WEIXIN_BASE_URL',
-  'WEIXIN_BOT_TOKEN',
-  'WEIXIN_ACCOUNT_ID',
-  'SLACK_BOT_TOKEN',
-  'SLACK_APP_TOKEN',
-  'DISCORD_BOT_TOKEN',
-  'DINGTALK_CLIENT_ID',
-  'DINGTALK_CLIENT_SECRET',
-  'WECOM_BOT_ID',
-  'WECOM_BOT_SECRET',
-  'WECOM_ENDPOINT',
 ] as const;
 
 const EXTERNAL_ENV_PRESET = new Set<string>(
@@ -150,17 +124,6 @@ const ENV_TO_CONFIG_KEY: ReadonlyArray<readonly [keyof UserConfig, string]> = [
   ['telegramAllowedChatIds', 'TELEGRAM_ALLOWED_CHAT_IDS'],
   ['feishuAppId', 'FEISHU_APP_ID'],
   ['feishuAppSecret', 'FEISHU_APP_SECRET'],
-  ['weixinBaseUrl', 'WEIXIN_BASE_URL'],
-  ['weixinBotToken', 'WEIXIN_BOT_TOKEN'],
-  ['weixinAccountId', 'WEIXIN_ACCOUNT_ID'],
-  ['slackBotToken', 'SLACK_BOT_TOKEN'],
-  ['slackAppToken', 'SLACK_APP_TOKEN'],
-  ['discordBotToken', 'DISCORD_BOT_TOKEN'],
-  ['dingtalkClientId', 'DINGTALK_CLIENT_ID'],
-  ['dingtalkClientSecret', 'DINGTALK_CLIENT_SECRET'],
-  ['wecomBotId', 'WECOM_BOT_ID'],
-  ['wecomBotSecret', 'WECOM_BOT_SECRET'],
-  ['wecomEndpoint', 'WECOM_ENDPOINT'],
 ];
 
 export function applyChannelEnvFallback(config: Partial<UserConfig>): Partial<UserConfig> {
@@ -336,17 +299,6 @@ function buildManagedEnv(config: Partial<UserConfig>): Record<(typeof MANAGED_EN
     TELEGRAM_ALLOWED_CHAT_IDS: String(config.telegramAllowedChatIds || '').trim(),
     FEISHU_APP_ID: String(config.feishuAppId || '').trim(),
     FEISHU_APP_SECRET: String(config.feishuAppSecret || '').trim(),
-    WEIXIN_BASE_URL: String(config.weixinBaseUrl || '').trim(),
-    WEIXIN_BOT_TOKEN: String(config.weixinBotToken || '').trim(),
-    WEIXIN_ACCOUNT_ID: String(config.weixinAccountId || '').trim(),
-    SLACK_BOT_TOKEN: String(config.slackBotToken || '').trim(),
-    SLACK_APP_TOKEN: String(config.slackAppToken || '').trim(),
-    DISCORD_BOT_TOKEN: String(config.discordBotToken || '').trim(),
-    DINGTALK_CLIENT_ID: String(config.dingtalkClientId || '').trim(),
-    DINGTALK_CLIENT_SECRET: String(config.dingtalkClientSecret || '').trim(),
-    WECOM_BOT_ID: String(config.wecomBotId || '').trim(),
-    WECOM_BOT_SECRET: String(config.wecomBotSecret || '').trim(),
-    WECOM_ENDPOINT: String(config.wecomEndpoint || '').trim(),
   };
 }
 

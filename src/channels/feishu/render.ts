@@ -421,7 +421,7 @@ export function renderModelsList(d: ModelsListData): string {
 export function renderSkillsList(d: SkillsListData): string {
   const lines = [`**Project Skills** (${d.skills.length})`, '', `**Agent:** ${d.agent}`, `**Workdir:** \`${d.workdir}\``];
   if (!d.skills.length) {
-    lines.push('', '*No project skills found in `.pikiloom/skills/` or `.claude/commands/`.*');
+    lines.push('', '*No project skills found in `.loomlet/skills/` or `.claude/commands/`.*');
     return lines.join('\n');
   }
 

@@ -5,7 +5,7 @@ import { buildSetupGuide, collectSetupState, type SetupState } from './onboardin
 import { getUserConfigPath, saveUserConfig } from '../core/config/user-config.js';
 import { VALIDATION_TIMEOUTS } from '../core/constants.js';
 
-type Channel = 'telegram' | 'feishu' | 'weixin' | 'slack' | 'discord' | 'dingtalk' | 'wecom';
+type Channel = 'telegram' | 'feishu';
 
 export interface TelegramBotIdentity {
   id: number;
@@ -202,7 +202,7 @@ export async function runSetupWizard(options: SetupWizardOptions): Promise<Setup
       io.write(`${selectedState?.label || selectedAgent} is not installed.\n`);
       const installNow = await askYesNo(io, `Install ${selectedAgent === 'claude' ? 'Claude Code' : 'Codex'} now?`, true);
       if (!installNow) {
-        io.write('Setup cancelled. Install the agent first, then run `npx pikiloom@latest` again.\n');
+        io.write('Setup cancelled. Install the agent first, then run `npx loomlet@latest` again.\n');
         return { completed: false, token, agent: selectedAgent, configPath: null, tokenCheck: null };
       }
 

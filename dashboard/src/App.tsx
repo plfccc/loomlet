@@ -16,24 +16,14 @@ const ExtensionsTab = lazy(async () => ({ default: (await import('./pages/extens
 const SystemTab = lazy(async () => ({ default: (await import('./pages/system/SystemTab')).SystemTab }));
 const TelegramModal = lazy(async () => ({ default: (await import('./components/Modals')).TelegramModal }));
 const FeishuModal = lazy(async () => ({ default: (await import('./components/Modals')).FeishuModal }));
-const WeixinModal = lazy(async () => ({ default: (await import('./components/Modals')).WeixinModal }));
-const SlackModal = lazy(async () => ({ default: (await import('./components/Modals')).SlackModal }));
-const DiscordModal = lazy(async () => ({ default: (await import('./components/Modals')).DiscordModal }));
-const DingtalkModal = lazy(async () => ({ default: (await import('./components/Modals')).DingtalkModal }));
-const WeComModal = lazy(async () => ({ default: (await import('./components/Modals')).WeComModal }));
 const WorkdirModal = lazy(async () => ({ default: (await import('./components/Modals')).WorkdirModal }));
 const BrowserSetupModal = lazy(async () => ({ default: (await import('./components/Modals')).BrowserSetupModal }));
 const ConnectionModal = lazy(async () => ({ default: (await import('./components/ConnectionModal')).ConnectionModal }));
 
 type ModalState =
   | null
-  | { type: 'weixin' }
   | { type: 'telegram' }
   | { type: 'feishu' }
-  | { type: 'slack' }
-  | { type: 'discord' }
-  | { type: 'dingtalk' }
-  | { type: 'wecom' }
   | { type: 'workdir' }
   | { type: 'browser-setup' }
   | { type: 'connection' };
@@ -197,13 +187,8 @@ export function App() {
                 <Route path="/im" element={
                   <PageWrapper title={tabMeta.title} description={tabMeta.description}>
                     <IMAccessTab
-                      onOpenWeixin={() => setModal({ type: 'weixin' })}
                       onOpenTelegram={() => setModal({ type: 'telegram' })}
                       onOpenFeishu={() => setModal({ type: 'feishu' })}
-                      onOpenSlack={() => setModal({ type: 'slack' })}
-                      onOpenDiscord={() => setModal({ type: 'discord' })}
-                      onOpenDingtalk={() => setModal({ type: 'dingtalk' })}
-                      onOpenWeCom={() => setModal({ type: 'wecom' })}
                     />
                   </PageWrapper>
                 } />
@@ -231,13 +216,8 @@ export function App() {
 
       {modal && (
         <Suspense fallback={null}>
-          {modal.type === 'weixin' && <WeixinModal open onClose={closeModal} />}
           {modal.type === 'telegram' && <TelegramModal open onClose={closeModal} />}
           {modal.type === 'feishu' && <FeishuModal open onClose={closeModal} />}
-          {modal.type === 'slack' && <SlackModal open onClose={closeModal} />}
-          {modal.type === 'discord' && <DiscordModal open onClose={closeModal} />}
-          {modal.type === 'dingtalk' && <DingtalkModal open onClose={closeModal} />}
-          {modal.type === 'wecom' && <WeComModal open onClose={closeModal} />}
           {modal.type === 'browser-setup' && <BrowserSetupModal open onClose={closeModal} onSaved={() => reload()} />}
           {modal.type === 'workdir' && <WorkdirModal open onClose={closeModal} />}
           {modal.type === 'connection' && <ConnectionModal open onClose={closeModal} />}

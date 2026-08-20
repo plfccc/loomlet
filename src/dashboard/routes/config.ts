@@ -9,20 +9,10 @@ import { expandTilde, whichSync } from '../../core/platform.js';
 import { readGitStatus } from '../../core/git.js';
 import { isSetupReady } from '../../cli/onboarding.js';
 import {
-  validateDingtalkConfig,
-  validateDiscordConfig,
   validateFeishuConfig,
-  validateSlackConfig,
   validateTelegramConfig,
-  validateWecomConfig,
-  validateWeixinConfig,
 } from '../../core/config/validation.js';
 import { resolveGuiIntegrationConfig } from '../../agent/mcp/bridge.js';
-import {
-  normalizeWeixinBaseUrl,
-  startWeixinQrLogin,
-  waitForWeixinQrLogin,
-} from '../../channels/weixin/api.js';
 import {
   getConfiguredRemoteCdpUrl,
   getManagedBrowserStatus,
@@ -339,74 +329,6 @@ app.post('/api/validate-feishu-config', async (c) => {
   });
 });
 
-app.post('/api/validate-weixin-config', async (c) => {
-  const body = await c.req.json();
-  const result = await validateWeixinConfig(body.baseUrl || '', body.botToken || '', body.accountId || '');
-  return c.json({
-    ok: result.state.ready,
-    error: result.state.ready ? null : result.state.detail,
-    account: result.account,
-    normalizedBaseUrl: result.normalizedBaseUrl,
-  });
-});
-
-app.post('/api/validate-slack-config', async (c) => {
-  const body = await c.req.json();
-  const result = await validateSlackConfig(body.botToken || '', body.appToken || '');
-  return c.json({
-    ok: result.state.ready,
-    error: result.state.ready ? null : result.state.detail,
-    bot: result.bot,
-  });
-});
-
-app.post('/api/validate-discord-config', async (c) => {
-  const body = await c.req.json();
-  const result = await validateDiscordConfig(body.botToken || '');
-  return c.json({
-    ok: result.state.ready,
-    error: result.state.ready ? null : result.state.detail,
-    bot: result.bot,
-  });
-});
-
-app.post('/api/validate-dingtalk-config', async (c) => {
-  const body = await c.req.json();
-  const result = await validateDingtalkConfig(body.clientId || '', body.clientSecret || '');
-  return c.json({
-    ok: result.state.ready,
-    error: result.state.ready ? null : result.state.detail,
-    app: result.app,
-  });
-});
-
-app.post('/api/validate-wecom-config', async (c) => {
-  const body = await c.req.json();
-  const result = await validateWecomConfig(body.botId || '', body.botSecret || '');
-  return c.json({
-    ok: result.state.ready,
-    error: result.state.ready ? null : result.state.detail,
-    bot: result.bot,
-  });
-});
-
-app.post('/api/weixin-login/start', async (c) => {
-  const body = await c.req.json();
-  const result = await startWeixinQrLogin({
-    baseUrl: normalizeWeixinBaseUrl(body.baseUrl || ''),
-    sessionKey: body.sessionKey || undefined,
-  });
-  return c.json(result, result.ok ? 200 : 500);
-});
-
-app.post('/api/weixin-login/wait', async (c) => {
-  const body = await c.req.json();
-  const result = await waitForWeixinQrLogin({
-    baseUrl: normalizeWeixinBaseUrl(body.baseUrl || ''),
-    sessionKey: String(body.sessionKey || '').trim(),
-  });
-  return c.json(result, result.ok ? 200 : 500);
-});
 
 app.post('/api/open-preferences', async (c) => {
   const body = await c.req.json();

@@ -16,27 +16,11 @@ const CHANNEL_AFFECTING_KEYS = new Set<keyof UserConfig>([
   'telegramAllowedChatIds',
   'feishuAppId',
   'feishuAppSecret',
-  'weixinBaseUrl',
-  'weixinBotToken',
-  'weixinAccountId',
-  'slackBotToken',
-  'slackAppToken',
-  'discordBotToken',
-  'dingtalkClientId',
-  'dingtalkClientSecret',
-  'wecomBotId',
-  'wecomBotSecret',
-  'wecomEndpoint',
 ]);
 
 const CHANNEL_REPLACE_SETTLE_MS: Record<ChannelName, number> = {
   telegram: 0,
-  weixin: 0,
   feishu: 5_000,
-  slack: 3_000,
-  discord: 3_000,
-  dingtalk: 3_000,
-  wecom: 3_000,
 };
 
 function sleep(ms: number): Promise<void> {
@@ -55,32 +39,6 @@ function snapshotCredsForChannel(channel: ChannelName, config: Partial<UserConfi
         appId: String(config.feishuAppId || '').trim(),
         appSecret: String(config.feishuAppSecret || '').trim(),
       });
-    case 'weixin':
-      return JSON.stringify({
-        baseUrl: String(config.weixinBaseUrl || '').trim(),
-        token: String(config.weixinBotToken || '').trim(),
-        accountId: String(config.weixinAccountId || '').trim(),
-      });
-    case 'slack':
-      return JSON.stringify({
-        botToken: String(config.slackBotToken || '').trim(),
-        appToken: String(config.slackAppToken || '').trim(),
-      });
-    case 'discord':
-      return JSON.stringify({
-        botToken: String(config.discordBotToken || '').trim(),
-      });
-    case 'dingtalk':
-      return JSON.stringify({
-        clientId: String(config.dingtalkClientId || '').trim(),
-        clientSecret: String(config.dingtalkClientSecret || '').trim(),
-      });
-    case 'wecom':
-      return JSON.stringify({
-        botId: String(config.wecomBotId || '').trim(),
-        botSecret: String(config.wecomBotSecret || '').trim(),
-        endpoint: String(config.wecomEndpoint || '').trim(),
-      });
   }
 }
 
@@ -93,26 +51,6 @@ async function createBotForChannel(channel: ChannelName): Promise<Bot> {
     case 'feishu': {
       const { FeishuBot } = await import('../channels/feishu/bot.js');
       return new FeishuBot();
-    }
-    case 'weixin': {
-      const { WeixinBot } = await import('../channels/weixin/bot.js');
-      return new WeixinBot();
-    }
-    case 'slack': {
-      const { SlackBot } = await import('../channels/slack/bot.js');
-      return new SlackBot();
-    }
-    case 'discord': {
-      const { DiscordBot } = await import('../channels/discord/bot.js');
-      return new DiscordBot();
-    }
-    case 'dingtalk': {
-      const { DingtalkBot } = await import('../channels/dingtalk/bot.js');
-      return new DingtalkBot();
-    }
-    case 'wecom': {
-      const { WeComBot } = await import('../channels/wecom/bot.js');
-      return new WeComBot();
     }
   }
 }
