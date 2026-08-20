@@ -115,7 +115,7 @@ export function resolveMcpServerCommand(runtime: McpServerRuntimeInfo = {
   if (fs.existsSync(cliScript)) {
     return { command: 'node', args: [cliScript, '--mcp-serve'] };
   }
-  return { command: 'pikiloom', args: ['--mcp-serve'] };
+  return { command: 'loomlet', args: ['--mcp-serve'] };
 }
 
 function parseOptionalBool(value: unknown): boolean | null {

@@ -39,7 +39,7 @@ import {
 } from './utils.js';
 import { getDriver } from './driver.js';
 import { collapseSkillPrompt } from './skills.js';
-import { SESSION_RUNNING_THRESHOLD_MS } from '../core/constants.js';
+import { SESSION_RUNNING_THRESHOLD_MS, STATE_DIR_NAME } from '../core/constants.js';
 
 function ensureDir(dirPath: string) { fs.mkdirSync(dirPath, { recursive: true }); }
 
@@ -63,7 +63,7 @@ function trimSessionText(value: unknown, max = 24_000): string | null {
   return `${text.slice(0, Math.max(0, max - 3)).trimEnd()}...`;
 }
 
-const PIKILOOM_DIR = '.pikiloom';
+const PIKILOOM_DIR = STATE_DIR_NAME;
 const PIKILOOM_SESSIONS_DIR = path.join(PIKILOOM_DIR, 'sessions');
 const PIKILOOM_SESSION_INDEX = path.join(PIKILOOM_SESSIONS_DIR, 'index.json');
 const PIKILOOM_LEGACY_WORKSPACES_DIR = path.join(PIKILOOM_DIR, 'workspaces');

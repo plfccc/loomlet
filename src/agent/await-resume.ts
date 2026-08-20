@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Agent, AwaitResumeState } from './types.js';
+import { STATE_DIR_NAME } from '../core/constants.js';
 
 const AWAIT_FILE = 'awaiting.json';
 const MAX_REASON_CHARS = 280;
 
 export function sessionAwaitPath(workdir: string, agent: Agent, sessionId: string): string {
-  return path.join(workdir, '.pikiloom', 'sessions', agent, sessionId, AWAIT_FILE);
+  return path.join(workdir, STATE_DIR_NAME, 'sessions', agent, sessionId, AWAIT_FILE);
 }
 
 export function readAwaitResume(workdir: string, agent: Agent, sessionId: string): AwaitResumeState | null {

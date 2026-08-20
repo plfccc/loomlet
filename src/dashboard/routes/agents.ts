@@ -373,10 +373,6 @@ app.post('/api/runtime-agent', async (c) => {
       runtime.setModelEnv(targetAgent, model);
       if (targetAgent === 'claude') nextConfig.claudeModel = model;
       if (targetAgent === 'codex') nextConfig.codexModel = model;
-      if (targetAgent === 'gemini') nextConfig.geminiModel = model;
-      if (targetAgent === 'hermes') {
-        if (!setAgentBoundModelId('hermes', model)) nextConfig.hermesModel = model;
-      }
       if (botRef) botRef.setModelForAgent(targetAgent, model);
     }
     if (hasEffort) {
@@ -387,8 +383,6 @@ app.post('/api/runtime-agent', async (c) => {
       runtime.setEffortEnv(targetAgent, effort);
       if (targetAgent === 'claude') nextConfig.claudeReasoningEffort = effort;
       if (targetAgent === 'codex') nextConfig.codexReasoningEffort = effort;
-      if (targetAgent === 'gemini') nextConfig.geminiReasoningEffort = effort;
-      if (targetAgent === 'hermes') nextConfig.hermesReasoningEffort = effort;
       if (botRef) botRef.setEffortForAgent(targetAgent, effort);
       if (targetAgent === 'claude') {
         runtime.runtimePrefs.workflow.claude = effortWorkflow;

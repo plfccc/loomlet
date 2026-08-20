@@ -7,8 +7,6 @@ import type { Agent, AppState, UserConfig } from '../types';
 const MODEL_FIELD_BY_AGENT: Record<Agent, keyof UserConfig> = {
   claude: 'claudeModel',
   codex: 'codexModel',
-  gemini: 'geminiModel',
-  hermes: 'defaultAgent',
 };
 
 function getDefaultModel(config: UserConfig, agent: Agent): string {

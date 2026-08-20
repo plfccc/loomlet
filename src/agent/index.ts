@@ -1,7 +1,5 @@
 import './drivers/claude.js';
 import './drivers/codex.js';
-import './drivers/gemini.js';
-import './drivers/hermes.js';
 
 export type {
   Agent, AgentDetectOptions, AgentInfo, AgentListResult,
@@ -168,5 +166,3 @@ export {
 
 export { doClaudeStream } from './drivers/claude.js';
 export { doCodexStream, buildCodexTurnInput, shutdownCodexServer, getCodexUsageLive, humanizeCodexError } from './drivers/codex.js';
-export { doGeminiStream } from './drivers/gemini.js';
-export { doHermesStream } from './drivers/hermes.js';

@@ -115,12 +115,6 @@ export interface StreamOpts {
   claudeExtraArgs?: string[];
   claudeWorkflowEnabled?: boolean;
   claudeAccessMode?: 'subscription' | 'api';
-  geminiModel?: string;
-  geminiApprovalMode?: string;
-  geminiSandbox?: boolean;
-  geminiSystemInstruction?: string;
-  geminiExtraArgs?: string[];
-  hermesModel?: string;
   _stdinOverride?: string;
   mcpSendFile?: import('./mcp/bridge.js').McpSendFileCallback;
   mcpConfigPath?: string;

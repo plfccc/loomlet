@@ -19,7 +19,7 @@ describe('effortLabel — one canonical name per effort token', () => {
 describe('effortOptionsFor — picker labels stay identical to the token', () => {
   // The dashboard composer/turn-header and the IM picker/agent-status all render the same
   // string, so a level must read the same everywhere. Guards against reintroducing "Very High".
-  for (const agent of ['claude', 'codex', 'hermes'] as const) {
+  for (const agent of ['claude', 'codex'] as const) {
     it(`${agent}: every label equals its id`, () => {
       const levels = effortOptionsFor(agent);
       expect(levels.length).toBeGreaterThan(0);
@@ -35,8 +35,8 @@ describe('effortOptionsFor — picker labels stay identical to the token', () =>
     expect(effortOptionsFor('codex').find(l => l.id === 'xhigh')?.label).toBe('xhigh');
   });
 
-  it('gemini has no UI-exposed effort levels', () => {
-    expect(effortOptionsFor('gemini')).toEqual([]);
+  it('an agent with no configured ladder has no UI-exposed effort levels', () => {
+    expect(effortOptionsFor('claude-tui')).toEqual([]);
   });
 
   it('codex with no model keeps the base low→xhigh ladder (no max/ultra)', () => {
@@ -75,7 +75,7 @@ describe('splitEffortForAgent — reconciles the two meanings of the effort toke
     expect(splitEffortForAgent('claude', 'high')).toEqual({ effort: 'high', workflow: false });
   });
 
-  it('hermes decomposes like claude (its ladder never reaches max/ultra anyway)', () => {
-    expect(splitEffortForAgent('hermes', 'high')).toEqual({ effort: 'high', workflow: false });
+  it('a non-claude/codex agent decomposes without workflow orchestration', () => {
+    expect(splitEffortForAgent('claude-tui', 'high')).toEqual({ effort: 'high', workflow: false });
   });
 });

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { STATE_DIR_NAME } from '../core/constants.js';
 import { getHome } from '../core/platform.js';
 import { agentLog, agentWarn } from './utils.js';
 import { mimeForExt } from './utils.js';
@@ -26,7 +27,7 @@ export function codexHome(): string {
 }
 
 export function sessionAttachmentsDir(agent: Agent, sessionId: string): string {
-  return path.join(getHome(), '.pikiloom', 'attachments', agent, sessionId);
+  return path.join(getHome(), STATE_DIR_NAME, 'attachments', agent, sessionId);
 }
 
 export function allowedAttachmentRoots(workdir?: string | readonly string[] | null): string[] {
@@ -36,7 +37,7 @@ export function allowedAttachmentRoots(workdir?: string | readonly string[] | nu
     path.join(codexHome(), 'sessions'),
     path.join(home, '.claude', 'projects'),
     path.join(home, '.gemini'),
-    path.join(home, '.pikiloom', 'attachments'),
+    path.join(home, STATE_DIR_NAME, 'attachments'),
     os.tmpdir(),
   ];
   const workdirs = typeof workdir === 'string' ? [workdir] : (workdir ?? []);

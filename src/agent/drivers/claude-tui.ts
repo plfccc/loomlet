@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { STATE_DIR_NAME } from '../../core/constants.js';
 import { tmpdir } from 'node:os';
 import type { StreamOpts, StreamResult } from '../types.js';
 import {
@@ -37,7 +38,7 @@ function writeStallDiag(record: Record<string, unknown>): void {
   if (stallDiagSink === null) return;
   try {
     if (stallDiagSink === undefined) {
-      const file = path.join(getHome(), '.pikiloom', 'diagnostics', 'claude-tui-stall.jsonl');
+      const file = path.join(getHome(), STATE_DIR_NAME, 'diagnostics', 'claude-tui-stall.jsonl');
       stallDiagSink = createRetainedLogSink(file, {
         maxLines: 50_000,
         maxAgeMs: 14 * 24 * 60 * 60_000,

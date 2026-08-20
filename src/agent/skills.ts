@@ -157,7 +157,7 @@ export function initializeProjectSkills(workdir: string, opts: { log?: (message:
   for (const linkRoot of [claudeRoot, agentsRoot]) {
     ensureDirSymlink(linkRoot, canonicalRoot);
   }
-  opts.log?.(`skills merged into .pikiloom/skills and linked to .claude/.agents workdir=${workdir}`);
+  opts.log?.(`skills merged into .loomlet/skills and linked to .claude/.agents workdir=${workdir}`);
 }
 
 export function getProjectSkillPaths(workdir: string, skillName: string): ProjectSkillPaths {

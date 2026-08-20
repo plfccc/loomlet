@@ -210,9 +210,9 @@ Channels are auto-detected from configured credentials. If multiple
 validated channels are enabled, they launch simultaneously.
 
 Usage:
-  npx pikiloom                              # auto-detect from config/env
-  npx pikiloom -w ~/project                 # set working directory
-  npx pikiloom stop                         # stop the running daemon
+  npx loomlet                              # auto-detect from config/env
+  npx loomlet -w ~/project                 # set working directory
+  npx loomlet stop                         # stop the running daemon
 
 Options:
   -t, --token <token>       Channel auth token (env: PIKILOOM_TOKEN)
@@ -244,11 +244,6 @@ Environment variables (Telegram):
   TELEGRAM_BOT_TOKEN         Telegram bot token (from @BotFather)
   TELEGRAM_ALLOWED_CHAT_IDS  Comma-separated allowed Telegram chat IDs
 
-Environment variables (Weixin):
-  WEIXIN_BASE_URL            Weixin API base URL (default: https://ilinkai.weixin.qq.com)
-  WEIXIN_BOT_TOKEN           Weixin bot token (normally configured from dashboard QR login)
-  WEIXIN_ACCOUNT_ID          Weixin bot account ID
-
 Environment variables (per agent):
   CLAUDE_MODEL               Claude model name
   CLAUDE_PERMISSION_MODE     Permission mode (default: bypassPermissions)
@@ -279,7 +274,6 @@ Environment variables (Feishu):
   FEISHU_ALLOWED_CHAT_IDS    Comma-separated allowed Feishu chat IDs
 
 Notes:
-  - weixin setup is QR-based in the dashboard and currently supports text-only replies.
   - --safe-mode delegates to the agent's own permission model; it does not add
     a pikiloom-specific approval workflow.
 

@@ -273,9 +273,7 @@ export const InputComposer = memo(function InputComposer({ session, workdir, onS
     const targetProfileId: string | null | undefined = selectedProfileId !== undefined
       ? selectedProfileId
       : (sendOwnsSessionAgent && session.model ? (session.profileId ?? null) : undefined);
-    const targetEffort = targetAgent === 'gemini'
-      ? null
-      : ((selectedEffort
+    const targetEffort = ((selectedEffort
         || (sendOwnsSessionAgent ? foldUltraEffort(targetAgent, session.thinkingEffort, session.workflowEnabled) : '')
         || foldUltraEffort(targetAgent, targetStatus?.selectedEffort, targetStatus?.workflowEnabled)
         || '').trim() || null);
@@ -513,9 +511,7 @@ export const InputComposer = memo(function InputComposer({ session, workdir, onS
     || (sessionOwnsAgent ? (session.model || '') : '')
     || currentAgent?.selectedModel
     || '';
-  const currentEffort = effectiveAgent === 'gemini'
-    ? ''
-    : (selectedEffort
+  const currentEffort = (selectedEffort
       || (sessionOwnsAgent ? foldUltraEffort(effectiveAgent, session.thinkingEffort, session.workflowEnabled) : '')
       || foldUltraEffort(effectiveAgent, currentAgent?.selectedEffort, currentAgent?.workflowEnabled)
       || '');
@@ -523,7 +519,7 @@ export const InputComposer = memo(function InputComposer({ session, workdir, onS
     onSelectionChange?.({ model: currentModel || null, effort: currentEffort || null });
   }, [currentModel, currentEffort, onSelectionChange]);
   // Effort levels for the effective agent come from the backend catalog (SSOT), not a
-  // hardcoded frontend list. Empty ⇒ the effort dropdown hides (e.g. gemini).
+  // hardcoded frontend list. Empty ⇒ the effort dropdown hides.
   const effortOptions: EffortLevel[] = currentAgent?.effortOptions ?? [];
   const previewAttachment = previewImageId ? imageAttachments.find(item => item.id === previewImageId) || null : null;
   const activePreview: LightboxSource | null = previewAttachment

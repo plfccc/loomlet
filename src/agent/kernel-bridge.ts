@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { STATE_DIR_NAME } from '../core/constants.js';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { StreamOpts, StreamResult, StreamPreviewMeta, StreamToolCall, StreamPreviewPlan } from './types.js';
 import { agentLog, agentWarn } from './utils.js';
@@ -12,7 +13,7 @@ import { humanizeCodexError } from './drivers/codex.js';
 // DEFAULT: ON — claude/codex/gemini/hermes turns run on the kernel drivers (via runTurn).
 // Escape hatches to the legacy driver path:
 //   LOOM_KERNEL_PIPELINE=0             (env; force legacy at startup; survives dev.sh scrub)
-//   ~/.pikiloom/dev/kernel-legacy.on   (file; hot-toggle legacy without restart)
+//   ~/.loomlet/dev/kernel-legacy.on   (file; hot-toggle legacy without restart)
 //   LOOM_KERNEL_PIPELINE=1             (env; force kernel, overriding the file)
 // Tests always run legacy (the unit suite asserts legacy driver behavior). The bridge
 // re-applies app-level parity the pure kernel must not own (claude jsonl entrypoint, codex humanize).
@@ -53,7 +54,7 @@ export function shouldUseKernelPipeline(agent: string): boolean {
   if (process.env.VITEST || process.env.NODE_ENV === 'test') return false;   // tests assert legacy
   if (process.env.LOOM_KERNEL_PIPELINE === '0') return false;                 // explicit legacy
   if (process.env.LOOM_KERNEL_PIPELINE === '1') return true;                  // explicit kernel
-  try { if (fs.existsSync(path.join(os.homedir(), '.pikiloom', 'dev', 'kernel-legacy.on'))) return false; } catch { /* ignore */ }
+  try { if (fs.existsSync(path.join(os.homedir(), STATE_DIR_NAME, 'dev', 'kernel-legacy.on'))) return false; } catch { /* ignore */ }
   return true;                                                                // default: kernel
 }
 
@@ -85,10 +86,6 @@ function buildKernelDriver(kernel: any, opts: StreamOpts): { driver: any; input:
       for (let i = 0; i < ce.length; i++) if (ce[i] === '-c' && ce[i + 1]) configOverrides.push(ce[++i]);
       return { driver: new kernel.CodexDriver(), input: { ...common, model: opts.codexModel ?? opts.model ?? null, systemPrompt: opts.codexDeveloperInstructions, configOverrides, fullAccess: opts.codexFullAccess } };
     }
-    case 'gemini':
-      return { driver: new kernel.GeminiDriver(), input: { ...common, model: opts.geminiModel ?? opts.model ?? null, systemPrompt: opts.geminiSystemInstruction, extraArgs: opts.geminiExtraArgs } };
-    case 'hermes':
-      return { driver: new kernel.HermesDriver(), input: { ...common, model: opts.hermesModel ?? opts.model ?? null } };
     case 'claude':
     default:
       return {

@@ -420,8 +420,6 @@ function requestedModelForAgent(opts: StreamOpts): string {
   switch (opts.agent) {
     case 'claude': return (opts.claudeModel || opts.model || '').trim();
     case 'codex': return (opts.codexModel || opts.model || '').trim();
-    case 'gemini': return (opts.geminiModel || opts.model || '').trim();
-    case 'hermes': return (opts.hermesModel || opts.model || '').trim();
   }
   return (opts.model || '').trim();
 }
@@ -509,8 +507,6 @@ export async function doStream(opts: StreamOpts): Promise<StreamResult> {
       if (injection.modelOverride) {
         if (prepared.agent === 'claude') prepared.claudeModel = injection.modelOverride;
         else if (prepared.agent === 'codex') prepared.codexModel = injection.modelOverride;
-        else if (prepared.agent === 'gemini') prepared.geminiModel = injection.modelOverride;
-        else if (prepared.agent === 'hermes') prepared.hermesModel = injection.modelOverride;
         prepared.model = injection.modelOverride;
       }
       if (injection.argvAppend?.length) {
@@ -575,8 +571,6 @@ export async function doStream(opts: StreamOpts): Promise<StreamResult> {
     const turnModel = prepared.model
       || (prepared.agent === 'claude' ? prepared.claudeModel
         : prepared.agent === 'codex' ? prepared.codexModel
-        : prepared.agent === 'gemini' ? prepared.geminiModel
-        : prepared.agent === 'hermes' ? prepared.hermesModel
         : null);
     if (turnModel) session.record.model = turnModel;
     if (prepared.profileId !== undefined) session.record.profileId = prepared.profileId || null;

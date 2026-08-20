@@ -3,17 +3,11 @@ import codexLogo from '../assets/brands/codex.png';
 import feishuLogo from '../assets/brands/feishu.ico';
 import geminiLogo from '../assets/brands/gemini.svg';
 import telegramLogo from '../assets/brands/telegram.svg';
-import weixinLogo from '../assets/brands/weixin.svg';
-import slackLogo from '../assets/brands/slack.svg';
-import discordLogo from '../assets/brands/discord.svg';
-import dingtalkLogo from '../assets/brands/dingtalk.svg';
-import wecomLogo from '../assets/brands/wecom.svg';
 import playwrightLogo from '../assets/brands/playwright.ico';
 import vscodeLogo from '../assets/brands/vscode.svg';
 import cursorLogo from '../assets/brands/cursor.svg';
 import windsurfLogo from '../assets/brands/windsurf.svg';
 import finderLogo from '../assets/brands/finder.svg';
-import hermesLogo from '../assets/brands/hermes.png';
 import openrouterLogo from '../assets/brands/openrouter.ico';
 import anthropicLogo from '../assets/brands/anthropic.ico';
 import deepseekLogo from '../assets/brands/deepseek.ico';
@@ -29,20 +23,13 @@ import { cn } from '../utils';
 const brandIcons: Record<string, string> = {
   claude: claudeLogo,
   codex: codexLogo,
-  gemini: geminiLogo,
   telegram: telegramLogo,
   feishu: feishuLogo,
-  weixin: weixinLogo,
-  slack: slackLogo,
-  discord: discordLogo,
-  dingtalk: dingtalkLogo,
-  wecom: wecomLogo,
   playwright: playwrightLogo,
   vscode: vscodeLogo,
   cursor: cursorLogo,
   windsurf: windsurfLogo,
   finder: finderLogo,
-  hermes: hermesLogo,
   openrouter: openrouterLogo,
   anthropic: anthropicLogo,
   deepseek: deepseekLogo,

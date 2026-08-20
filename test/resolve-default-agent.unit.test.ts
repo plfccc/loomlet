@@ -8,13 +8,13 @@ function info(agent: AgentInfo['agent'], installed: boolean): AgentInfo {
 }
 
 const ALL_INSTALLED: AgentInfo[] = [
-  info('claude', true), info('codex', true), info('gemini', true), info('hermes', true),
+  info('claude', true), info('codex', true),
 ];
 const ONLY_CLAUDE: AgentInfo[] = [
-  info('claude', true), info('codex', false), info('gemini', false), info('hermes', false),
+  info('claude', true), info('codex', false),
 ];
 const NONE_INSTALLED: AgentInfo[] = [
-  info('claude', false), info('codex', false), info('gemini', false), info('hermes', false),
+  info('claude', false), info('codex', false),
 ];
 
 describe('resolveDefaultAgent', () => {
@@ -34,7 +34,8 @@ describe('resolveDefaultAgent', () => {
 
   it('falls back to a valid preference when nothing is installed', () => {
     expect(resolveDefaultAgent('codex', NONE_INSTALLED)).toBe('codex');
-    expect(resolveDefaultAgent('gemini', NONE_INSTALLED)).toBe('gemini');
+    // claude (not the 'codex' fallback) proves the valid preference is what's honored
+    expect(resolveDefaultAgent('claude', NONE_INSTALLED)).toBe('claude');
   });
 
   it('defaults to codex when neither preference nor installs resolve', () => {

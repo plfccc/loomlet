@@ -13,8 +13,6 @@ describe('CommandAction codec', () => {
     { kind: 'session.switch', sessionId: 'abc-123-def' },
     { kind: 'agent.switch', agent: 'claude' },
     { kind: 'agent.switch', agent: 'codex' },
-    { kind: 'agent.switch', agent: 'gemini' },
-    { kind: 'agent.switch', agent: 'hermes' },
     { kind: 'agent.account.set', agent: 'claude', accountId: 'c0f32fdb' },
     { kind: 'agent.account.set', agent: 'claude', accountId: null },
     { kind: 'model.switch', modelId: 'claude-opus-4-7' },

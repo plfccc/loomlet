@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { STATE_DIR_NAME } from '../core/constants.js';
 import type { Agent } from './types.js';
 
 export type GoalStatus = 'active' | 'paused' | 'budget_limited' | 'complete';
@@ -24,7 +25,7 @@ const MAX_OBJECTIVE_CHARS = 4000;
 export const DEFAULT_MAX_CONTINUATIONS = 50;
 
 export function sessionGoalPath(workdir: string, agent: Agent, sessionId: string): string {
-  return path.join(workdir, '.pikiloom', 'sessions', agent, sessionId, GOAL_FILE);
+  return path.join(workdir, STATE_DIR_NAME, 'sessions', agent, sessionId, GOAL_FILE);
 }
 
 export function readGoal(workdir: string, agent: Agent, sessionId: string): ThreadGoal | null {

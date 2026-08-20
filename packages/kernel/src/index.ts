@@ -46,16 +46,13 @@ export {
 export { EchoDriver } from './drivers/echo.js';
 export { ClaudeDriver, type ClaudeDriverOptions } from './drivers/claude.js';
 export { CodexDriver } from './drivers/codex.js';
-export { GeminiDriver } from './drivers/gemini.js';
-export { AcpDriver, type AcpDriverConfig } from './drivers/acp.js';
-export { HermesDriver } from './drivers/hermes.js';
 export { WebSurface, type WebSurfaceOptions } from './surfaces/web.js';
 export { CliSurface } from './surfaces/cli.js';
 
 // Native-session discovery: pure readers of each agent CLI's own transcript store
 // (driver-axis knowledge; drivers implement listNativeSessions with these).
 export {
-  discoverClaudeNativeSessions, discoverCodexNativeSessions, discoverGeminiNativeSessions,
+  discoverClaudeNativeSessions, discoverCodexNativeSessions,
   encodeClaudeProjectDir, type DiscoverOptions,
 } from './drivers/native.js';
 

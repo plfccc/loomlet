@@ -4,8 +4,6 @@ import type { SessionInfo } from './types';
 export const AGENT_ACCEPTED_PROVIDER_KINDS: Record<Agent, readonly string[]> = {
   claude: ['anthropic', 'openai-compatible'],
   codex: ['openai', 'openai-compatible'],
-  gemini: ['google'],
-  hermes: ['anthropic', 'openai', 'openai-compatible', 'google'],
 };
 
 export function fmtBytes(b: number): string {
@@ -89,26 +87,6 @@ export const agentMeta: Record<string, AgentMeta> = {
     glow: 'rgba(125,211,252,0.2)',
     border: 'rgba(125,211,252,0.2)',
     advantageKey: 'config.agentAdvantageCodex',
-  },
-  gemini: {
-    label: 'Gemini CLI',
-    shortLabel: 'Gemini',
-    color: '#c4b5fd',
-    bg: 'rgba(196,181,253,0.12)',
-    letter: 'G',
-    glow: 'rgba(196,181,253,0.2)',
-    border: 'rgba(196,181,253,0.2)',
-    advantageKey: 'config.agentAdvantageGemini',
-  },
-  hermes: {
-    label: 'Hermes',
-    shortLabel: 'Hermes',
-    color: '#fbbf24',
-    bg: 'rgba(251,191,36,0.12)',
-    letter: 'H',
-    glow: 'rgba(251,191,36,0.2)',
-    border: 'rgba(251,191,36,0.2)',
-    advantageKey: 'config.agentAdvantageHermes',
   },
 };
 

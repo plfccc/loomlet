@@ -6,7 +6,7 @@ import { createLoom } from '../src/runtime/loom.js';
 import { EchoDriver } from '../src/drivers/echo.js';
 import { resolveLoomPaths } from '../src/workspace/paths.js';
 import {
-  discoverClaudeNativeSessions, discoverCodexNativeSessions, discoverGeminiNativeSessions,
+  discoverClaudeNativeSessions, discoverCodexNativeSessions,
   encodeClaudeProjectDir,
 } from '../src/drivers/native.js';
 import { SessionsManager } from '../src/workspace/sessions.js';
@@ -129,29 +129,10 @@ describe('workspace/native — discovering an agent\'s own sessions', () => {
     expect(path.resolve(out[0].cwd!)).toBe(path.resolve(workdir));
   });
 
-  it('discovers gemini native sessions via projects.json', () => {
-    const workdir = path.join(tmp, 'proj');
-    fs.mkdirSync(workdir, { recursive: true });
-    fs.mkdirSync(path.join(tmp, '.gemini'), { recursive: true });
-    fs.writeFileSync(path.join(tmp, '.gemini', 'projects.json'), JSON.stringify({ projects: { [path.resolve(workdir)]: 'projhash' } }));
-    const chats = path.join(tmp, '.gemini', 'tmp', 'projhash', 'chats');
-    fs.mkdirSync(chats, { recursive: true });
-    fs.writeFileSync(path.join(chats, 'session-1.json'), JSON.stringify({
-      sessionId: 'gem-1', startTime: '2026-06-30T00:00:00Z', lastUpdated: '2026-06-30T00:00:00Z',
-      messages: [{ type: 'user', content: 'hello gemini' }, { type: 'model', content: 'hi there' }],
-    }));
-
-    const out = discoverGeminiNativeSessions(workdir, { home: tmp });
-    expect(out).toHaveLength(1);
-    expect(out[0].sessionId).toBe('gem-1');
-    expect(out[0].title).toBe('hello gemini');
-    expect(out[0].preview).toBe('hi there');
-  });
 
   it('returns [] when the agent has no store', () => {
     expect(discoverClaudeNativeSessions('/no/such', { home: tmp })).toEqual([]);
     expect(discoverCodexNativeSessions('/no/such', { home: tmp })).toEqual([]);
-    expect(discoverGeminiNativeSessions('/no/such', { home: tmp })).toEqual([]);
   });
 });
 
