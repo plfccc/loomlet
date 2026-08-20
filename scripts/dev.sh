@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-DEV_DIR="${HOME}/.pikiloom/dev"
+DEV_DIR="${HOME}/.loomlet/dev"
 LOG_FILE="${DEV_DIR}/dev.log"
 
 # Dev dashboard always binds this port. dev.sh frees it before (re)starting so a
@@ -12,13 +12,13 @@ LOG_FILE="${DEV_DIR}/dev.log"
 DEV_PORT="${PIKILOOM_DEV_PORT:-3940}"
 
 # Dev mode must stay on the local source tree.
-# Do not hop into the production/self-bootstrap `npx pikiloom@latest` chain.
+# Do not hop into the upstream production/self-bootstrap `npx pikiloom@latest` chain.
 mkdir -p "${DEV_DIR}"
 
 # Decide whether to detach early.
 #
 # Why this happens FIRST, before any kill / build:
-# dev.sh restarts the running pikiloom runtime, and when invoked from inside an
+# dev.sh restarts the running loomlet runtime, and when invoked from inside an
 # agent session (Codex app-server, Claude `-p`, …) that runtime IS the host
 # process for the agent. If we kill the runtime while still living in the
 # agent's bash subtree, the agent's stdio breaks mid-script: Codex cancels the
@@ -48,7 +48,12 @@ if (( _should_detach )); then
   # Agent tool runners can clean up the shell's remaining child process tree
   # after this parent exits. Launch the worker in a new session from a short
   # Python parent so it is reparented before the tool runner performs cleanup.
-  if command -v python3 >/dev/null 2>&1; then
+  #
+  # Probe by running python3, not by `command -v`: Windows ships an App Execute
+  # Alias stub at python3.exe that resolves on PATH but only prints a Microsoft
+  # Store advert and exits non-zero. Trusting `command -v` there takes this
+  # branch, produces no pid, and silently spawns nothing.
+  if python3 -c '' >/dev/null 2>&1; then
     _bg_pid=$(python3 - "$0" "${LOG_FILE}" "$(pwd)" "$@" <<'PY'
 import os
 import subprocess
@@ -90,7 +95,7 @@ fi
 
 # ---------------------------------------------------------------------------
 # Below runs either as the TTY foreground process, or as the detached worker.
-# Both are now safe to kill the running pikiloom runtime — neither shares a
+# Both are now safe to kill the running loomlet runtime — neither shares a
 # stdio/process-group dependency with the agent that invoked us.
 # ---------------------------------------------------------------------------
 
@@ -132,10 +137,10 @@ _is_detached_worker=0
 [[ "${PIKILOOM_DEV_DETACHED:-0}" == "1" ]] && _is_detached_worker=1
 
 # Dev isolates setting.json only. The managed browser profile intentionally
-# stays at ~/.pikiloom/browser/chrome-profile so dev and the main runtime reuse
+# stays at ~/.loomlet/browser/chrome-profile so dev and the main runtime reuse
 # the same browser login state.
 #
-# Clean inherited env vars that leak when launched from inside a running pikiloom
+# Clean inherited env vars that leak when launched from inside a running loomlet
 # or Claude Code session. Without this, the dev process inherits agent permissions,
 # channel credentials, daemon flags, workdir overrides, etc. from the parent.
 # Use pattern-based unset to catch everything rather than maintaining an explicit list.
