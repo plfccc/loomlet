@@ -1,4 +1,4 @@
-export type Agent = 'claude' | 'codex' | 'gemini' | 'hermes';
+export type Agent = 'claude' | 'codex';
 export type OpenTarget = 'vscode' | 'cursor' | 'windsurf' | 'finder' | 'default';
 
 export interface AgentInfo {
@@ -94,7 +94,7 @@ export interface AgentStatusResponse {
 export type ChannelStatus = 'ready' | 'missing' | 'invalid' | 'error' | 'checking';
 
 export interface ChannelSetupState {
-  channel: 'telegram' | 'feishu' | 'weixin' | 'slack' | 'discord' | 'dingtalk' | 'wecom';
+  channel: 'telegram' | 'feishu';
   configured: boolean;
   ready: boolean;
   validated: boolean;
@@ -145,23 +145,11 @@ export interface UserConfig {
   claudeReasoningEffort?: string;
   codexModel?: string;
   codexReasoningEffort?: string;
-  geminiModel?: string;
   workdir?: string;
   telegramBotToken?: string;
   telegramAllowedChatIds?: string;
   feishuAppId?: string;
   feishuAppSecret?: string;
-  weixinBaseUrl?: string;
-  weixinBotToken?: string;
-  weixinAccountId?: string;
-  slackBotToken?: string;
-  slackAppToken?: string;
-  discordBotToken?: string;
-  dingtalkClientId?: string;
-  dingtalkClientSecret?: string;
-  wecomBotId?: string;
-  wecomBotSecret?: string;
-  wecomEndpoint?: string;
   channels?: string[];
   browserEnabled?: boolean;
   browserHeadless?: boolean;
@@ -227,86 +215,6 @@ export interface HostInfo {
   loadAverage?: { one: number; five: number; fifteen: number } | null;
   disk?: { used: string; total: string; percent: string };
   battery?: { percent: string; state: string };
-}
-
-export type LocalBackendId = 'ollama' | 'mlx';
-export type LocalBackendOs = 'darwin' | 'linux' | 'win';
-
-export interface LocalBackendInstallCommand {
-  label?: string;
-  cmd: string;
-}
-
-export interface LocalBackendInstallSpec {
-  darwin?: LocalBackendInstallCommand[];
-  linux?: LocalBackendInstallCommand[];
-  win?: LocalBackendInstallCommand[];
-  docs?: string;
-}
-
-export interface LocalBackendStatus {
-  id: LocalBackendId;
-  label: string;
-  detected: boolean;
-  version?: string;
-  baseURL: string;
-  openAIBaseURL: string;
-  models: Array<{ id: string; sizeBytes?: number }>;
-  existingProviderId: string | null;
-  homepage: string;
-  install: LocalBackendInstallSpec;
-  runHint: LocalBackendInstallCommand;
-  pullCommandTemplate: string;
-  supportedOnThisOs: boolean;
-}
-
-export interface LocalModelCatalogEntry {
-  id: string;
-  name: string;
-  publisher: string;
-  paramsB: number;
-  sizeGb: number;
-  minRamGb: number;
-  description: string;
-  descriptionZh: string;
-  ollamaTag?: string;
-  mlxModel?: string;
-  homepage?: string;
-  installed: { backend: LocalBackendId; id: string } | null;
-}
-
-export interface LocalModelsProbeResponse {
-  ok: boolean;
-  backends?: LocalBackendStatus[];
-  catalog?: LocalModelCatalogEntry[];
-  currentOs?: LocalBackendOs;
-  addedProviderIds?: string[];
-  error?: string;
-}
-
-export interface OllamaLibSize {
-  tag: string;
-  paramsB: number;
-  diskGb: number;
-  minRamGb: number;
-}
-
-export interface OllamaLibModel {
-  name: string;
-  description: string;
-  capabilities: string[];
-  sizes: OllamaLibSize[];
-  pulls: string;
-  updated: string;
-  url: string;
-}
-
-export interface OllamaLibraryResponse {
-  ok: boolean;
-  models?: OllamaLibModel[];
-  fetchedAt?: number;
-  stale?: boolean;
-  error?: string;
 }
 
 export interface InteractionOption {

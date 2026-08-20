@@ -5,7 +5,6 @@ import { BrandIcon } from '../../components/BrandIcon';
 import { useStore } from '../../store';
 import { cn, getAgentMeta } from '../../utils';
 import type { Locale } from '../../i18n';
-import type { LocalBackendStatus } from '../../types';
 
 type ProviderKind = 'anthropic' | 'openai' | 'openai-compatible' | 'google';
 
@@ -704,25 +703,14 @@ function normalizeProviderBaseURL(raw: string): string {
     .replace(/^https:\/\/localhost(?=[:/]|$)/i, 'https://127.0.0.1');
 }
 
-function providerMatchesLocalBackend(
-  provider: ProviderRow,
-  localBackends: LocalBackendStatus[],
-): boolean {
-  const target = normalizeProviderBaseURL(provider.baseURL);
-  return localBackends.some(b => normalizeProviderBaseURL(b.openAIBaseURL) === target);
-}
-
 export default function ModelsSection({
   snapshot,
-  localBackends,
 }: {
   snapshot?: ModelLayerSnapshot;
-  localBackends?: LocalBackendStatus[];
 } = {}) {
   const localState = useModelLayer();
   const layer = snapshot ?? localState;
   const { providers, reload } = layer;
-  const backendsForLookup = localBackends ?? [];
 
   const locale = useStore(s => s.locale);
   const copy = useMemo(() => getCopy(locale), [locale]);
@@ -773,13 +761,13 @@ export default function ModelsSection({
   }, [providers]);
 
   const tiles = useMemo<TileDescriptor[]>(() => {
-    const visibleProviders = providers.filter(p => !providerMatchesLocalBackend(p, backendsForLookup));
+    const visibleProviders = providers;
     const claimedProviderIds = new Set<string>();
     const out: TileDescriptor[] = [];
     for (const tpl of TEMPLATES) {
       if (tpl.id === 'custom') continue;
       const provider = providerByTemplateId.get(tpl.id);
-      if (provider && !providerMatchesLocalBackend(provider, backendsForLookup)) {
+      if (provider) {
         claimedProviderIds.add(provider.id);
         out.push({ template: tpl, provider });
       } else {
@@ -793,7 +781,7 @@ export default function ModelsSection({
     const customTpl = TEMPLATES.find(t => t.id === 'custom');
     if (customTpl) out.push({ template: customTpl });
     return out;
-  }, [providers, providerByTemplateId, backendsForLookup]);
+  }, [providers, providerByTemplateId]);
 
   const pickTile = useCallback((desc: TileDescriptor) => {
     if (desc.provider) {

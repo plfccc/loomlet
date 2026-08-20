@@ -10,12 +10,11 @@ import { UsageTooltipContent } from '../../components/UsageTooltip';
 import { Badge, Button, Input, Label, Modal, ModalHeader, ModelSelect, Select, Spinner, Tooltip } from '../../components/ui';
 import { SectionCard } from '../shared';
 import ModelsSection, { useModelLayer, type ModelLayerSnapshot } from '../models/ModelsTab';
-import LocalModelsSection, { useLocalBackends } from '../local-models/LocalModelsSection';
 import ProfilesSection from '../profiles/ProfilesSection';
 import { AccountsPanel } from './AccountsPanel';
 
 const NATIVE_PROVIDER_VALUE = '__native__';
-const AGENT_ORDER: Agent[] = ['claude', 'codex', 'gemini', 'hermes'];
+const AGENT_ORDER: Agent[] = ['claude', 'codex'];
 
 interface ProviderModelInfo {
   id: string;
@@ -64,10 +63,6 @@ function buildModelOption(info: ProviderModelInfo): { label: string; description
   const released = formatCreatedDate(info.created);
   if (released) parts.push(released);
   return { label, description: parts.length ? parts.join(' · ') : undefined };
-}
-
-function isNativeConfigExternal(agent: Agent): boolean {
-  return agent === 'hermes';
 }
 
 function brandIdForNativeSlug(slug: string | undefined | null): string {
@@ -200,7 +195,6 @@ type CopyPack = {
   saving: string;
   saved: string;
   configError: string;
-  externalNativeNote: (path: string) => string;
   configure: string;
   configModalTitle: (label: string) => string;
   rowSummaryNative: string;
@@ -278,7 +272,6 @@ function getCopy(locale: Locale): CopyPack {
       saving: '保存中…',
       saved: '已保存',
       configError: '保存失败',
-      externalNativeNote: path => `Hermes 当前从 ${path || '~/.hermes/config.yaml'} 读取这些值；切换为某个 BYOK 供应商可由 pikiloom 接管。`,
       configure: '配置',
       configModalTitle: label => `配置 ${label}`,
       rowSummaryNative: '官方认证',
@@ -354,7 +347,6 @@ function getCopy(locale: Locale): CopyPack {
     saving: 'Saving…',
     saved: 'Saved',
     configError: 'Save failed',
-    externalNativeNote: path => `Hermes reads these values from ${path || '~/.hermes/config.yaml'}; pick a BYOK provider to let pikiloom take over.`,
     configure: 'Configure',
     configModalTitle: label => `Configure ${label}`,
     rowSummaryNative: 'Native auth',
@@ -462,7 +454,6 @@ function AgentInlineConfig({
   onCancel: () => void;
   t: (key: string) => string;
 }) {
-  const externalNative = isNativeConfigExternal(agentId);
   const native = agentStatus.nativeConfig || null;
 
   const baseline = useMemo(
@@ -476,7 +467,6 @@ function AgentInlineConfig({
   useEffect(() => { setDraft(baseline); setError(null); }, [baseline]);
 
   const isNative = draft.kind === 'native';
-  const nativeReadOnly = isNative && externalNative;
 
   const effortOptions = useMemo(() => {
     const levels = agentStatus.effortOptions ?? [];
@@ -489,7 +479,6 @@ function AgentInlineConfig({
   const modelOptions = useMemo(() => {
     type RichOpt = { value: string; label: string; description?: string; meta?: string; group?: string };
     const out: RichOpt[] = [];
-    if (!externalNative) {
       for (const m of agentStatus.models) {
         const aliasNormalized = m.alias?.toLowerCase().replace(/[\s_-]/g, '');
         const idNormalized = m.id.toLowerCase().replace(/[\s_-]/g, '');
@@ -501,7 +490,6 @@ function AgentInlineConfig({
           group: copy.modelGroupNative,
         });
       }
-    }
     const acceptedKinds = new Set(AGENT_ACCEPTED_PROVIDER_KINDS[agentId] || []);
     for (const p of layer.profiles) {
       const provider = layer.providers.find(x => x.id === p.providerId);
@@ -517,7 +505,7 @@ function AgentInlineConfig({
       });
     }
     return out;
-  }, [agentId, agentStatus.models, layer.profiles, layer.providers, copy.modelGroupNative, copy.modelGroupProfiles, externalNative]);
+  }, [agentId, agentStatus.models, layer.profiles, layer.providers, copy.modelGroupNative, copy.modelGroupProfiles]);
 
   const selectionValue = encodeSelection(draft);
 
@@ -547,7 +535,7 @@ function AgentInlineConfig({
   }, [layer.profiles, agentStatus.nativeSelectedEffort, agentStatus.nativeConfig]);
 
   const dirty = !draftEqual(draft, baseline);
-  const canSave = !submitting && dirty && (nativeReadOnly || !!draft.modelId.trim() || draft.kind === 'profile');
+  const canSave = !submitting && dirty && (!!draft.modelId.trim() || draft.kind === 'profile');
 
   const submit = useCallback(async () => {
     setError(null);
@@ -557,19 +545,17 @@ function AgentInlineConfig({
 
       if (draft.kind === 'native') {
         if (layer.bindings[agentId]) await layer.setActiveProfile(agentId, null);
-        if (!externalNative) {
-          const patch: Record<string, unknown> = { agent: agentId };
-          const targetModel = draft.modelId.trim();
-          const currentEffort = foldUltraEffort(agentId, agentStatus.nativeSelectedEffort, agentStatus.workflowEnabled) || null;
-          if (targetModel && targetModel !== (agentStatus.nativeSelectedModel || '')) patch.model = targetModel;
-          if (targetEffort !== currentEffort) patch.effort = targetEffort;
-          if (agentId === 'claude' && draft.accessMode && draft.accessMode !== agentStatus.claudeAccessMode) {
-            patch.accessMode = draft.accessMode;
-          }
-          if (Object.keys(patch).length > 1) {
-            const res = await api.updateRuntimeAgent(patch);
-            if (!res.ok) throw new Error(res.error || 'Failed to update agent');
-          }
+        const patch: Record<string, unknown> = { agent: agentId };
+        const targetModel = draft.modelId.trim();
+        const currentEffort = foldUltraEffort(agentId, agentStatus.nativeSelectedEffort, agentStatus.workflowEnabled) || null;
+        if (targetModel && targetModel !== (agentStatus.nativeSelectedModel || '')) patch.model = targetModel;
+        if (targetEffort !== currentEffort) patch.effort = targetEffort;
+        if (agentId === 'claude' && draft.accessMode && draft.accessMode !== agentStatus.claudeAccessMode) {
+          patch.accessMode = draft.accessMode;
+        }
+        if (Object.keys(patch).length > 1) {
+          const res = await api.updateRuntimeAgent(patch);
+          if (!res.ok) throw new Error(res.error || 'Failed to update agent');
         }
       } else {
         if (!draft.profileId) throw new Error('No profile selected');
@@ -590,18 +576,14 @@ function AgentInlineConfig({
     } finally {
       setSubmitting(false);
     }
-  }, [agentId, agentStatus, copy, draft, externalNative, layer, onSaved, toast]);
+  }, [agentId, agentStatus, copy, draft, layer, onSaved, toast]);
 
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div>
           <Label className="!mb-1 text-[11px]">{copy.rowModel}</Label>
-          {nativeReadOnly ? (
-            <div className="flex h-9 items-center rounded-md border border-control-border bg-control px-3 text-[13px] text-fg-3">
-              <span className="truncate font-mono">{native?.model || copy.noModel}</span>
-            </div>
-          ) : modelOptions.length === 0 ? (
+          {modelOptions.length === 0 ? (
             <div className="rounded-md border border-edge bg-panel-alt px-3 py-3">
               <div className="text-[12px] font-medium text-fg-3">{copy.modelPickerEmpty}</div>
               <div className="mt-0.5 text-[11px] leading-relaxed text-fg-5">{copy.modelPickerEmptyHint}</div>
@@ -621,17 +603,11 @@ function AgentInlineConfig({
 
         <div>
           <Label className="!mb-1 text-[11px]">{copy.rowEffort}</Label>
-          {nativeReadOnly ? (
-            <div className="flex h-9 items-center rounded-md border border-control-border bg-control px-3 text-[13px] text-fg-3">
-              <span className="font-mono">{native?.effort || copy.effortDefault}</span>
-            </div>
-          ) : (
-            <Select
-              value={draft.effort}
-              options={effortOptions}
-              onChange={v => setDraft(d => ({ ...d, effort: v }))}
-            />
-          )}
+          <Select
+            value={draft.effort}
+            options={effortOptions}
+            onChange={v => setDraft(d => ({ ...d, effort: v }))}
+          />
         </div>
       </div>
 
@@ -662,11 +638,6 @@ function AgentInlineConfig({
         <AccountsPanel agentId={agentId} />
       )}
 
-      {nativeReadOnly && (
-        <div className="text-[11px] leading-relaxed text-fg-5">
-          {copy.externalNativeNote(native?.configPath || '')}
-        </div>
-      )}
 
       {error && (
         <div className="rounded-md border border-rose-700/40 bg-rose-900/20 px-3 py-2 text-xs text-rose-200">
@@ -918,7 +889,6 @@ export function AgentTab() {
   const t = useMemo(() => createT(locale), [locale]);
   const copy = useMemo(() => getCopy(locale), [locale]);
   const modelLayer = useModelLayer();
-  const localBackendLayer = useLocalBackends();
 
   const [snapshot, setSnapshot] = useState<SnapshotState | null>(
     storeAgentStatus ? { defaultAgent: storeAgentStatus.defaultAgent, agents: storeAgentStatus.agents } : null,
@@ -1186,18 +1156,9 @@ export function AgentTab() {
             <div className="mt-0.5 text-[13px] leading-relaxed text-fg-4">{copy.modelsHint}</div>
           </div>
         </div>
-        <ModelsSection snapshot={modelLayer} localBackends={localBackendLayer.backends} />
+        <ModelsSection snapshot={modelLayer} />
       </section>
 
-      <section className="space-y-3 pt-4">
-        <div className="flex items-baseline justify-between border-t border-edge pt-4">
-          <div>
-            <div className="text-base font-semibold tracking-tight text-fg">{copy.localTitle}</div>
-            <div className="mt-0.5 text-[13px] leading-relaxed text-fg-4">{copy.localHint}</div>
-          </div>
-        </div>
-        <LocalModelsSection snapshot={localBackendLayer} onConnected={handleConfigSaved} />
-      </section>
 
       <Modal open={!!editingAgentStatus} onClose={() => setEditingAgent(null)} wide>
         {editingAgentStatus && editingMeta && (
