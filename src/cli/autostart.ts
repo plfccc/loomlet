@@ -35,11 +35,11 @@ function detectInvocation(): InvocationCommand | null {
   if (entry.includes('/_npx/') || entry.includes('\\_npx\\')) {
     const npxBin = whichSync('npx');
     if (!npxBin) return null;
-    return { program: npxBin, args: ['-y', 'pikiloom@latest', ...userArgs] };
+    return { program: npxBin, args: ['-y', 'loomlet@latest', ...userArgs] };
   }
 
-  const pikiloomBin = whichSync('pikiloom');
-  if (pikiloomBin) return { program: pikiloomBin, args: userArgs };
+  const bin = whichSync('loomlet') || whichSync('pikiloom');
+  if (bin) return { program: bin, args: userArgs };
   return null;
 }
 

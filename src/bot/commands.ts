@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs';
+import { STATE_DIR_NAME } from '../core/constants.js';
 import type { Bot, ChatId, Agent, SessionInfo, SessionRuntime, ChatState, StreamResult } from './bot.js';
 import { fmtTokens, fmtUptime, fmtBytes } from './bot.js';
 import {
@@ -717,7 +718,7 @@ export function resolveSkillPrompt(bot: Bot, chatId: ChatId, cmd: string, args: 
   if (skillFile) {
     prompt = `${workdirHint}Read the skill definition at \`${relSkillPath(wd, skillFile)}\` and execute the instructions defined there.${suffix}`;
   } else {
-    const fallbackPath = relSkillPath(wd, path.join(wd, '.pikiloom', 'skills', skill.name, 'SKILL.md'));
+    const fallbackPath = relSkillPath(wd, path.join(wd, STATE_DIR_NAME, 'skills', skill.name, 'SKILL.md'));
     prompt = `${workdirHint}Read the skill definition at \`${fallbackPath}\` and execute the instructions defined there.${suffix}`;
   }
   return { prompt, skillName: skill.name };

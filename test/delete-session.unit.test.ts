@@ -16,7 +16,7 @@ function makeRecord(workdir: string, sessionId: string, opts: Partial<ManagedSes
     agent: 'claude',
     sessionId,
     threadId: `thread-${sessionId}`,
-    workspacePath: path.join(workdir, '.pikiloom', 'sessions', 'claude', sessionId, 'workspace'),
+    workspacePath: path.join(workdir, '.loomlet', 'sessions', 'claude', sessionId, 'workspace'),
     model: 'claude-sonnet-4-6',
     thinkingEffort: null,
     title: 'test',
@@ -39,11 +39,11 @@ function makeRecord(workdir: string, sessionId: string, opts: Partial<ManagedSes
 describe('deleteAgentSession', () => {
   it('deletes sessions correctly: removes entry, preserves siblings, refuses running, handles missing', async () => {
     {
-      const workdir = makeTmpDir('pikiloom-del-');
+      const workdir = makeTmpDir('loomlet-del-');
       const record = makeRecord(workdir, 'sess-1');
       saveSessionRecord(workdir, record);
 
-      const sessionDir = path.join(workdir, '.pikiloom', 'sessions', 'claude', 'sess-1');
+      const sessionDir = path.join(workdir, '.loomlet', 'sessions', 'claude', 'sess-1');
       expect(fs.existsSync(sessionDir)).toBe(true);
       expect(findPikiloomSession(workdir, 'claude', 'sess-1')).not.toBeNull();
 
@@ -59,7 +59,7 @@ describe('deleteAgentSession', () => {
     }
 
     {
-      const workdir = makeTmpDir('pikiloom-del-');
+      const workdir = makeTmpDir('loomlet-del-');
       saveSessionRecord(workdir, makeRecord(workdir, 'keep'));
       saveSessionRecord(workdir, makeRecord(workdir, 'drop'));
 
@@ -70,7 +70,7 @@ describe('deleteAgentSession', () => {
     }
 
     {
-      const workdir = makeTmpDir('pikiloom-del-');
+      const workdir = makeTmpDir('loomlet-del-');
       saveSessionRecord(workdir, makeRecord(workdir, 'running', {
         runState: 'running',
         runPid: process.pid,
@@ -86,7 +86,7 @@ describe('deleteAgentSession', () => {
     }
 
     {
-      const workdir = makeTmpDir('pikiloom-del-');
+      const workdir = makeTmpDir('loomlet-del-');
       const result = await deleteAgentSession({ workdir, agent: 'claude', sessionId: 'never-existed' });
       expect(result.ok).toBe(true);
       expect(result.recordRemoved).toBe(false);

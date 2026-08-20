@@ -24,9 +24,9 @@ describe('ensureGitignore', () => {
   it('leaves the file byte-for-byte unchanged when managed lines already present, even below user rules', () => {
     const content = [
       'node_modules/',
-      '.pikiloom/*',
-      '!.pikiloom/skills/',
-      '!.pikiloom/skills/**',
+      '.loomlet/*',
+      '!.loomlet/skills/',
+      '!.loomlet/skills/**',
       '',
       'products/eval-studio/package-lock.json',
       '',
@@ -39,7 +39,7 @@ describe('ensureGitignore', () => {
   });
 
   it('preserves blank lines', () => {
-    const content = 'node_modules/\n\n.pikiloom/*\n!.pikiloom/skills/\n!.pikiloom/skills/**\n';
+    const content = 'node_modules/\n\n.loomlet/*\n!.loomlet/skills/\n!.loomlet/skills/**\n';
     fs.writeFileSync(gi, content);
     ensureGitignore(dir);
     expect(fs.readFileSync(gi, 'utf8')).toBe(content);
@@ -50,18 +50,18 @@ describe('ensureGitignore', () => {
     ensureGitignore(dir);
     const out = fs.readFileSync(gi, 'utf8');
     expect(out.startsWith('node_modules/\n')).toBe(true);
-    expect(out).toContain('.pikiloom/*');
-    expect(out).toContain('!.pikiloom/skills/');
-    expect(out).toContain('!.pikiloom/skills/**');
+    expect(out).toContain('.loomlet/*');
+    expect(out).toContain('!.loomlet/skills/');
+    expect(out).toContain('!.loomlet/skills/**');
   });
 
   it('removes legacy lines while keeping managed ones in place', () => {
-    fs.writeFileSync(gi, '.pikiloom/\n.claude/skills/\n.pikiloom/*\n!.pikiloom/skills/\n!.pikiloom/skills/**\n');
+    fs.writeFileSync(gi, '.pikiloom/\n.claude/skills/\n.loomlet/*\n!.loomlet/skills/\n!.loomlet/skills/**\n');
     ensureGitignore(dir);
     const out = fs.readFileSync(gi, 'utf8').split('\n');
     expect(out).not.toContain('.pikiloom/');
     expect(out).not.toContain('.claude/skills/');
-    expect(out.filter(l => l === '.pikiloom/*')).toHaveLength(1);
+    expect(out.filter(l => l === '.loomlet/*')).toHaveLength(1);
   });
 
   it('is idempotent across repeated runs', () => {

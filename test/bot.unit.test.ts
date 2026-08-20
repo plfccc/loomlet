@@ -104,7 +104,7 @@ describe('Bot.runStream', () => {
     const doStreamMock = vi.mocked(doStream);
     const bot = new Bot();
     const sessionWorkdir = makeTmpDir('bot-unit-session-workdir-');
-    const workspacePath = path.join(sessionWorkdir, '.pikiloom', 'sessions', 'claude', 'session-1', 'workspace');
+    const workspacePath = path.join(sessionWorkdir, '.loomlet', 'sessions', 'claude', 'session-1', 'workspace');
     const runtime: any = {
       key: 'claude:session-1',
       workdir: sessionWorkdir,
@@ -634,7 +634,7 @@ describe('Bot external session control', () => {
 });
 
 describe('Bot gitignore management', () => {
-  it('keeps .pikiloom/skills tracked while ignoring managed runtime state', () => {
+  it('keeps .loomlet/skills tracked while ignoring managed runtime state', () => {
     const workdir = makeTmpDir('bot-unit-gitignore-');
     fs.writeFileSync(path.join(workdir, '.gitignore'), '.env\n.pikiloom/\n');
     process.env.PIKILOOM_WORKDIR = workdir;
@@ -643,9 +643,9 @@ describe('Bot gitignore management', () => {
 
     expect(fs.readFileSync(path.join(workdir, '.gitignore'), 'utf8')).toBe([
       '.env',
-      '.pikiloom/*',
-      '!.pikiloom/skills/',
-      '!.pikiloom/skills/**',
+      '.loomlet/*',
+      '!.loomlet/skills/',
+      '!.loomlet/skills/**',
       '',
     ].join('\n'));
   });

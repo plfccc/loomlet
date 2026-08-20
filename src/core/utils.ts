@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { whichSync as platformWhichSync } from './platform.js';
+import { STATE_DIR_NAME } from './constants.js';
 
 export type ChatId = number | string;
 
@@ -9,12 +10,16 @@ export function ensureGitignore(dir: string) {
     const gi = path.join(dir, '.gitignore');
     if (!fs.existsSync(gi)) return;
     const managedLines = [
+      `${STATE_DIR_NAME}/*`,
+      `!${STATE_DIR_NAME}/skills/`,
+      `!${STATE_DIR_NAME}/skills/**`,
+    ];
+    // Entries the previous state-dir names left behind, pruned on the next pass.
+    const legacyLines = new Set([
+      '.pikiloom/',
       '.pikiloom/*',
       '!.pikiloom/skills/',
       '!.pikiloom/skills/**',
-    ];
-    const legacyLines = new Set([
-      '.pikiloom/',
       '.claude/skills/',
       '.agents/skills/',
     ]);

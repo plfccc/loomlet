@@ -1,10 +1,10 @@
 {
-  "name": "pikiloom",
-  "version": "0.4.83",
-  "description": "Put the world's smartest AI agents in your pocket. Command local Claude & Gemini via IM. | 让最好用的 IM 变成你电脑上的顶级 Agent 控制台",
+  "name": "loomlet",
+  "version": "0.1.0",
+  "description": "A layered, open Agent orchestrator — streamlined fork of pikiloom. Telegram + Feishu terminals, Claude Code / Codex / claude-tui agents.",
   "type": "module",
   "bin": {
-    "pikiloom": "dist/cli/main.js"
+    "loomlet": "dist/cli/main.js"
   },
   "files": [
     "dist/",
@@ -16,11 +16,13 @@
   ],
   "keywords": [
     "telegram",
+    "feishu",
     "ai",
     "coding",
     "claude",
     "codex",
-    "bridge",
+    "agent",
+    "orchestrator",
     "cli"
   ],
   "author": "xiaotonng",
@@ -28,7 +30,7 @@
   "packageManager": "npm@11.6.2",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xiaotonng/pikiloom.git"
+    "url": "git+https://github.com/plfccc/loomlet.git"
   },
   "scripts": {
     "verify:toolchain": "node scripts/verify-toolchain.mjs",
@@ -50,7 +52,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "22.23.1 || ^25.2.0",
+      "version": "22.23.1 || ^24.0.0 || ^25.2.0",
       "onFail": "error"
     },
     "packageManager": {
@@ -83,11 +85,6 @@
     "@hono/node-server": "^1.19.11",
     "@larksuiteoapi/node-sdk": "^1.59.0",
     "@playwright/mcp": "^0.0.75",
-    "@slack/bolt": "^4.7.2",
-    "@slack/socket-mode": "^2.0.7",
-    "@slack/web-api": "^7.15.2",
-    "dingtalk-stream": "^2.1.6-beta.1",
-    "discord.js": "^14.26.4",
     "hono": "^4.12.9",
     "qrcode": "^1.5.4",
     "remark-breaks": "^4.0.0",

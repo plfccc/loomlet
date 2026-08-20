@@ -155,7 +155,7 @@ const UpdateIcon = ({ size = 12 }: { size?: number }) => (
 );
 
 const LOCAL_BRAND_SLUGS = new Set([
-  'claude', 'codex', 'gemini', 'telegram', 'feishu', 'weixin',
+  'claude', 'codex', 'telegram', 'feishu',
   'playwright', 'vscode', 'cursor', 'windsurf', 'finder',
 ]);
 
@@ -937,8 +937,8 @@ function LocalSkillCard({
       <div className="relative mt-auto pt-3 flex items-center justify-between text-[10.5px] text-fg-5">
         <span>
           {skill.scope === 'global'
-            ? L(locale, '全局 · ~/.pikiloom/skills', 'Global · ~/.pikiloom/skills')
-            : L(locale, '项目 · .pikiloom/skills', 'Project · .pikiloom/skills')}
+            ? L(locale, '全局 · ~/.loomlet/skills', 'Global · ~/.loomlet/skills')
+            : L(locale, '项目 · .loomlet/skills', 'Project · .loomlet/skills')}
         </span>
         <Button
           variant="ghost"

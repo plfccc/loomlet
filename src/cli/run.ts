@@ -40,7 +40,7 @@ Usage:
   npm run command -- <command> [options]
 
 Commands:
-  skills          List project-defined custom skills (.pikiloom/skills)
+  skills          List project-defined custom skills (.loomlet/skills)
   claude-run      Run a single Claude prompt and print the result
   codex-run       Run a single Codex prompt and print the result
   claude-status   Show Claude agent info and API usage
@@ -88,7 +88,7 @@ async function main() {
     case 'skills': {
       const result = listSkills(workdir);
       if (!result.skills.length) {
-        process.stdout.write(`No custom skills found in ${workdir} (.pikiloom/skills)\n`);
+        process.stdout.write(`No custom skills found in ${workdir} (.loomlet/skills)\n`);
         break;
       }
       process.stdout.write(`Project skills (${result.skills.length}):\n\n`);

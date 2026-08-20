@@ -35,7 +35,7 @@ function resolveSkillFromPrompt(workdir: string, prompt: string): { resolvedProm
   const workdirHint = `[Project directory: ${workdir}]\n\n`;
   const paths = getProjectSkillPaths(workdir, skill.name);
   const skillFile = paths.claudeSkillFile || paths.sharedSkillFile || paths.agentsSkillFile;
-  const targetPath = skillFile || `${workdir}/.pikiloom/skills/${skill.name}/SKILL.md`;
+  const targetPath = skillFile || `${workdir}/.loomlet/skills/${skill.name}/SKILL.md`;
   const resolvedPrompt = `${workdirHint}Read the skill definition at \`${targetPath}\` and execute the instructions defined there.${extra}`;
   return { resolvedPrompt, skillName: skill.name };
 }
