@@ -47,7 +47,7 @@ describe('delivered-artifact manifest', () => {
     expect(rec!.kind).toBe('document');
     expect(rec!.caption).toBe('final report');
 
-    expect(rec!.path).toContain(path.join('.pikiloom', 'attachments', 'claude', 'sess-1', 'delivered'));
+    expect(rec!.path).toContain(path.join('.loomlet', 'attachments', 'claude', 'sess-1', 'delivered'));
     expect(rec!.path).not.toBe(src);
     expect(fs.existsSync(rec!.path)).toBe(true);
     expect(fs.readFileSync(rec!.path, 'utf-8')).toBe('PDF-CONTENT');

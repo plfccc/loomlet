@@ -46,7 +46,7 @@ function writeFakeScript(name: string, jsonLines: object[]) {
   fs.writeFileSync(p, script, { mode: 0o755 });
 }
 
-function baseOpts(agent: 'codex' | 'claude' | 'gemini', extra: Partial<StreamOpts> = {}): StreamOpts {
+function baseOpts(agent: 'codex' | 'claude', extra: Partial<StreamOpts> = {}): StreamOpts {
   return {
     agent,
     prompt: 'test prompt',
@@ -93,7 +93,7 @@ describe('buildCodexTurnInput and usage helpers', () => {
     expect(sanitizeSessionUserPreviewText('[Attached file: /tmp/shot.png]')).toBe('');
     expect(sanitizeSessionUserPreviewText('[Image: original 2316x1558] 帮我看一下这里为什么有间距')).toBe('帮我看一下这里为什么有间距');
     expect(sanitizeSessionUserPreviewText('正常问题')).toBe('正常问题');
-    expect(sanitizeSessionUserPreviewText('@/Users/me/.pikiloom/sessions/claude/x/workspace/image.png\n\n看一下截图')).toBe('看一下截图');
+    expect(sanitizeSessionUserPreviewText('@/Users/me/.loomlet/sessions/claude/x/workspace/image.png\n\n看一下截图')).toBe('看一下截图');
     expect(sanitizeSessionUserPreviewText('@/tmp/a.jpg @/tmp/b.webp prompt')).toBe('prompt');
     expect(sanitizeSessionUserPreviewText('@user mentions are not paths')).toBe('@user mentions are not paths');
 
@@ -383,21 +383,21 @@ describe('stageSessionFiles', () => {
       files: [uploadPath],
     });
 
-    const stagedDir = path.join(tmpDir, '.pikiloom', 'sessions', 'claude', staged.sessionId);
+    const stagedDir = path.join(tmpDir, '.loomlet', 'sessions', 'claude', staged.sessionId);
     expect(staged.workspacePath).toBe(path.join(stagedDir, 'workspace'));
     expect(fs.existsSync(path.join(staged.workspacePath, 'report.txt'))).toBe(true);
     expect(fs.existsSync(path.join(stagedDir, 'session.json'))).toBe(true);
 
     const legacySessionId = 'sess_legacy_layout';
-    const legacyWorkspacePath = path.join(tmpDir, '.pikiloom', 'workspaces', 'claude', legacySessionId);
-    const legacyMetaDir = path.join(legacyWorkspacePath, '.pikiloom');
+    const legacyWorkspacePath = path.join(tmpDir, '.loomlet', 'workspaces', 'claude', legacySessionId);
+    const legacyMetaDir = path.join(legacyWorkspacePath, '.loomlet');
     fs.mkdirSync(legacyMetaDir, { recursive: true });
     fs.writeFileSync(path.join(legacyWorkspacePath, 'legacy.txt'), 'legacy');
     fs.writeFileSync(path.join(legacyMetaDir, 'return.json'), JSON.stringify({
       files: [{ path: 'legacy.txt', kind: 'document' }],
     }));
-    fs.mkdirSync(path.join(tmpDir, '.pikiloom', 'sessions'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, '.pikiloom', 'sessions', 'index.json'), JSON.stringify({
+    fs.mkdirSync(path.join(tmpDir, '.loomlet', 'sessions'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.loomlet', 'sessions', 'index.json'), JSON.stringify({
       version: 1,
       sessions: [{
         sessionId: legacySessionId,
@@ -419,7 +419,7 @@ describe('stageSessionFiles', () => {
       sessionId: legacySessionId,
     });
 
-    const migratedDir = path.join(tmpDir, '.pikiloom', 'sessions', 'claude', legacySessionId);
+    const migratedDir = path.join(tmpDir, '.loomlet', 'sessions', 'claude', legacySessionId);
     expect(migrated.workspacePath).toBe(path.join(migratedDir, 'workspace'));
     expect(fs.existsSync(path.join(migrated.workspacePath, 'legacy.txt'))).toBe(true);
     expect(fs.existsSync(path.join(migratedDir, 'session.json'))).toBe(true);
@@ -456,7 +456,7 @@ describe('stageSessionFiles', () => {
 
     promoteSessionId(workdir, 'codex', staged.sessionId, 'thread-native');
 
-    const nativeWorkspace = path.join(workdir, '.pikiloom', 'sessions', 'codex', 'thread-native', 'workspace');
+    const nativeWorkspace = path.join(workdir, '.loomlet', 'sessions', 'codex', 'thread-native', 'workspace');
     expect(fs.existsSync(path.join(nativeWorkspace, 'shot.jpg'))).toBe(true);
     expect(fs.existsSync(oldFilePath)).toBe(true);
 
@@ -916,148 +916,6 @@ rl.on('line', (line) => {
 
     const spawns = fs.readFileSync(spawnLog, 'utf-8').trim().split('\n').filter(Boolean);
     expect(spawns).toHaveLength(2);
-    }
-  });
-});
-
-describe('gemini stream', () => {
-  it('injects MCP/defaults, dedupes flags, computes context percent, parses tools, and normalizes errors', async () => {
-    {
-    const argvFile = path.join(tmpDir, 'gemini-argv.json');
-    const envFile = path.join(tmpDir, 'gemini-env.json');
-    const copiedSettingsFile = path.join(tmpDir, 'gemini-settings-copy.json');
-    const script = `#!/usr/bin/env node
-const fs = require('node:fs');
-const settingsPath = process.env.GEMINI_CLI_SYSTEM_SETTINGS_PATH || '';
-fs.writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));
-fs.writeFileSync(${JSON.stringify(envFile)}, JSON.stringify({
-  GEMINI_CLI_SYSTEM_SETTINGS_PATH: settingsPath,
-}));
-if (settingsPath && fs.existsSync(settingsPath)) {
-  fs.copyFileSync(settingsPath, ${JSON.stringify(copiedSettingsFile)});
-}
-process.stdout.write(JSON.stringify({ type: 'init', session_id: 'gemini-session', model: 'gemini-2.5-pro' }) + '\\n');
-process.stdout.write(JSON.stringify({ type: 'message', role: 'assistant', delta: true, content: 'Gemini ok' }) + '\\n');
-process.stdout.write(JSON.stringify({ type: 'result', session_id: 'gemini-session', status: 'success' }) + '\\n');
-`;
-    fs.writeFileSync(path.join(fakeBin, 'gemini'), script, { mode: 0o755 });
-
-    const result = await doStream(baseOpts('gemini', {
-      geminiModel: 'gemini-2.5-pro',
-      mcpSendFile: async () => ({ ok: true }),
-    }));
-
-    expect(result.ok).toBe(true);
-    expect(result.sessionId).toBe('gemini-session');
-    expect(result.message).toBe('Gemini ok');
-    expect(result.contextWindow).toBe(1_048_576);
-
-    const argv = JSON.parse(fs.readFileSync(argvFile, 'utf-8'));
-    expect(argv).toContain('--output-format');
-    expect(argv).toContain('stream-json');
-    expect(argv).toContain('--approval-mode');
-    expect(argv).toContain('yolo');
-    expect(argv).toContain('--sandbox');
-    expect(argv).toContain('false');
-    expect(argv).not.toContain('--mcp-config');
-
-    const env = JSON.parse(fs.readFileSync(envFile, 'utf-8'));
-    expect(typeof env.GEMINI_CLI_SYSTEM_SETTINGS_PATH).toBe('string');
-    expect(env.GEMINI_CLI_SYSTEM_SETTINGS_PATH).toContain('gemini-system-settings.json');
-
-    const settings = JSON.parse(fs.readFileSync(copiedSettingsFile, 'utf-8'));
-    expect(settings.fileFiltering).toEqual({
-      respectGitIgnore: false,
-      respectGeminiIgnore: false,
-    });
-    expect(settings.mcpServers?.pikiloom?.command).toBeTruthy();
-    expect(settings.mcpServers?.pikiloom?.env?.MCP_CALLBACK_URL).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
-    expect(settings.mcpServers?.pikiloom?.trust).toBe(true);
-    }
-
-    {
-    const argvFile = path.join(tmpDir, 'gemini-argv-override.json');
-    const script = `#!/usr/bin/env node
-const fs = require('node:fs');
-fs.writeFileSync(${JSON.stringify(argvFile)}, JSON.stringify(process.argv.slice(2)));
-process.stdout.write(JSON.stringify({ type: 'init', session_id: 'gemini-session-override', model: 'gemini-2.5-pro' }) + '\\n');
-process.stdout.write(JSON.stringify({ type: 'message', role: 'assistant', delta: true, content: 'Gemini override ok' }) + '\\n');
-process.stdout.write(JSON.stringify({ type: 'result', session_id: 'gemini-session-override', status: 'success' }) + '\\n');
-`;
-    fs.writeFileSync(path.join(fakeBin, 'gemini'), script, { mode: 0o755 });
-
-    const result = await doStream(baseOpts('gemini', {
-      geminiApprovalMode: 'yolo',
-      geminiSandbox: false,
-      geminiExtraArgs: ['--approval-mode', 'default', '--sandbox', 'true'],
-    }));
-
-    expect(result.ok).toBe(true);
-
-    const argv = JSON.parse(fs.readFileSync(argvFile, 'utf-8'));
-    expect(argv.filter((arg: string) => arg === '--approval-mode')).toHaveLength(1);
-    expect(argv.filter((arg: string) => arg === '--sandbox')).toHaveLength(1);
-    expect(argv).toContain('default');
-    expect(argv).toContain('true');
-    }
-
-    {
-    writeFakeScript('gemini', [
-      { type: 'init', session_id: 'gemini-ctx', model: 'gemini-2.5-pro' },
-      { type: 'message', role: 'assistant', delta: true, content: 'OK' },
-      { type: 'result', session_id: 'gemini-ctx', status: 'success', stats: { input_tokens: 9302, output_tokens: 50, cached: 132, total_tokens: 9484 } },
-    ]);
-
-    const result = await doGeminiStream(baseOpts('gemini', {
-      geminiModel: 'gemini-2.5-pro',
-    }));
-
-    expect(result.ok).toBe(true);
-    expect(result.contextWindow).toBe(1_048_576);
-    expect(result.contextUsedTokens).toBe(9302);
-    expect(result.contextPercent).toBe(0.9);
-    }
-
-    {
-    const activities: string[] = [];
-    writeFakeScript('gemini', [
-      { type: 'init', session_id: 'gemini-tools', model: 'gemini-2.5-pro' },
-      { type: 'tool_use', tool_name: 'list_directory', tool_id: 'tool-1', parameters: { dir_path: '.' } },
-      { type: 'tool_result', tool_id: 'tool-1', status: 'success', output: 'Listed 38 item(s). (2 ignored)' },
-      { type: 'message', role: 'assistant', delta: true, content: 'Done' },
-      { type: 'result', session_id: 'gemini-tools', status: 'success' },
-    ]);
-
-    const result = await doGeminiStream(baseOpts('gemini', {
-      onText: (_text, _thinking, activity) => {
-        if (activity) activities.push(activity);
-      },
-    }));
-
-    expect(result.ok).toBe(true);
-    expect(result.message).toBe('Done');
-    expect(result.activity).toContain('List files: .');
-    expect(result.activity).toContain('List files: . -> Listed 38 item(s). (2 ignored)');
-    expect(activities.some(activity => activity.includes('List files: . -> Listed 38 item(s). (2 ignored)'))).toBe(true);
-    }
-
-    {
-    writeFakeScript('gemini', [
-      { type: 'init', session_id: 'gemini-error', model: 'gemini-2.5-pro' },
-      {
-        type: 'result',
-        session_id: 'gemini-error',
-        status: 'error',
-        error: { type: 'FatalCancellationError', message: 'Operation cancelled.' },
-      },
-    ]);
-
-    const result = await doGeminiStream(baseOpts('gemini'));
-
-    expect(result.ok).toBe(false);
-    expect(result.message).toBe('Operation cancelled.');
-    expect(result.error).toBe('Operation cancelled.');
-    expect(result.incomplete).toBe(true);
     }
   });
 });
@@ -1909,11 +1767,11 @@ rl.on('line', (line) => {
     const result = await doStream(baseOpts('codex', { prompt: '给我讲故事' }));
     expect(result.ok).toBe(true);
     expect(result.sessionId).toBe('thread-native');
-    expect(result.workspacePath).toBe(path.join(tmpDir, '.pikiloom', 'sessions', 'codex', 'thread-native', 'workspace'));
+    expect(result.workspacePath).toBe(path.join(tmpDir, '.loomlet', 'sessions', 'codex', 'thread-native', 'workspace'));
 
     const record = listPikiloomSessions(tmpDir, 'codex').find(entry => entry.sessionId === 'thread-native');
     expect(record?.title).toBe('给我讲故事');
-    expect(record?.workspacePath).toBe(path.join(tmpDir, '.pikiloom', 'sessions', 'codex', 'thread-native', 'workspace'));
+    expect(record?.workspacePath).toBe(path.join(tmpDir, '.loomlet', 'sessions', 'codex', 'thread-native', 'workspace'));
     }
 
     shutdownCodexServer();
@@ -1984,7 +1842,7 @@ rl.on('line', (line) => {
     expect(result.sessionId).toBe('thread-forwarded');
 
     const record = listPikiloomSessions(tmpDir, 'codex').find(entry => entry.sessionId === 'thread-forwarded');
-    expect(record?.workspacePath).toBe(path.join(tmpDir, '.pikiloom', 'sessions', 'codex', 'thread-forwarded', 'workspace'));
+    expect(record?.workspacePath).toBe(path.join(tmpDir, '.loomlet', 'sessions', 'codex', 'thread-forwarded', 'workspace'));
     }
 
     shutdownCodexServer();
@@ -2030,7 +1888,7 @@ exit 1`;
       workdir: tmpDir,
       files: [],
     });
-    const manifestPath = path.join(tmpDir, '.pikiloom', 'sessions', 'claude', staged.sessionId, 'return.json');
+    const manifestPath = path.join(tmpDir, '.loomlet', 'sessions', 'claude', staged.sessionId, 'return.json');
     fs.writeFileSync(manifestPath, JSON.stringify({
       files: [{ path: 'README.md', kind: 'document', caption: 'stale artifact' }],
     }, null, 2));

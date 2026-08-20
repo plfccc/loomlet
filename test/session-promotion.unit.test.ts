@@ -17,7 +17,7 @@ function makeRecord(workdir: string, sessionId: string, opts: Partial<ManagedSes
     agent: 'claude',
     sessionId,
     threadId: `thread-${sessionId}`,
-    workspacePath: path.join(workdir, '.pikiloom', 'sessions', 'claude', sessionId, 'workspace'),
+    workspacePath: path.join(workdir, '.loomlet', 'sessions', 'claude', sessionId, 'workspace'),
     model: 'claude-sonnet-4-6',
     thinkingEffort: null,
     title: 'test',
@@ -109,7 +109,7 @@ describe('durable session promotions', () => {
     const native = makeRecord(workdir, 'native-legacy');
     saveSessionRecord(workdir, native);
 
-    const pendingDir = path.join(workdir, '.pikiloom', 'sessions', 'claude', 'pending_legacy0000');
+    const pendingDir = path.join(workdir, '.loomlet', 'sessions', 'claude', 'pending_legacy0000');
     fs.symlinkSync('native-legacy', pendingDir, 'dir');
     expect(getSessionPromotions(workdir)['claude:pending_legacy0000']).toBeUndefined();
 
