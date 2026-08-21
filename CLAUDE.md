@@ -164,5 +164,7 @@ node <repo>/node_modules/vitest/vitest.mjs run    # npx re-triggers the devEngin
 - Persistent config is `~/.loomlet/setting.json`
 - The Dashboard is part of the normal runtime, not just a setup helper
 - This machine still runs the upstream pikiloom via `npx pikiloom@latest` (its own `~/.pikiloom` state); do not kill, replace, or "clean up" that process when the task only concerns loomlet dev mode
-- `npm run dev` rewrites `~/.loomlet/dev/dev.log` on each launch. When invoked without a TTY (any tool-call / piped invocation) it auto-detaches into the background — no need for `run_in_background:true`. Force foreground with `PIKILOOM_DEV_FOREGROUND=1`, background with `PIKILOOM_DEV_BACKGROUND=1`.
+- `npm run dev` rewrites `~/.loomlet/dev/dev.log` on each launch. When invoked without a TTY (any tool-call / piped invocation) it auto-detaches into the background — no need for `run_in_background:true`. Force foreground with `PIKILOOM_DEV_FOREGROUND=1`, background with `PIKILOOM_DEV_BACKGROUND=1`. Stop it with `bash scripts/dev.sh --stop`.
+- Dev mode isolates config: `PIKILOOM_CONFIG` points at `~/.loomlet/dev/setting.json`, so the main `~/.loomlet/setting.json` channels are NOT loaded. An empty `launching channels:` line in the dev log is expected unless that dev file has credentials of its own.
+- `npm run dev` counts three `node.exe` processes on Windows for one runtime (`npx-cli.js` → `tsx/cli.mjs` → the worker). Only the innermost one binds the port; check `netstat -ano | grep :3940` rather than counting processes.
 - For full architecture / extension / testing guides, see `ARCHITECTURE.md`, `INTEGRATION.md`, `TESTING.md`.

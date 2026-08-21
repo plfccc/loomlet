@@ -11,6 +11,71 @@ LOG_FILE="${DEV_DIR}/dev.log"
 # PIKILOOM_DEV_PORT if you really need a different one.
 DEV_PORT="${PIKILOOM_DEV_PORT:-3940}"
 
+# Neither pkill nor lsof reaches a native Windows process from Git Bash — pkill is often
+# not even on a non-interactive PATH, and lsof simply is not installed. Both greps silently
+# found nothing, so every `npm run dev` left the previous worker alive: N runtimes polling
+# one Telegram bot (HTTP 409 "terminated by other getUpdates request") and the dashboard
+# drifting off ${DEV_PORT} on EADDRINUSE. Query the OS instead, per platform.
+
+# PIDs of dev workers, matched on the tsx command line.
+_dev_worker_pids() {
+  if [[ "${OS:-}" == "Windows_NT" ]]; then
+    powershell -NoProfile -Command \
+      "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { \$_.CommandLine -like '*src/cli/main.ts*--no-daemon*' } | ForEach-Object { \$_.ProcessId }" \
+      2>/dev/null | tr -d '\r' | grep -E '^[0-9]+$' || true
+  else
+    pgrep -f 'tsx src/cli/main.ts --no-daemon' 2>/dev/null || true
+  fi
+}
+
+# PIDs listening on $1.
+_port_listener_pids() {
+  if [[ "${OS:-}" == "Windows_NT" ]]; then
+    netstat -ano 2>/dev/null | tr -d '\r' \
+      | awk -v port=":$1" '$1 ~ /^TCP$/ && $2 ~ port"$" && $4 == "LISTENING" { print $5 }' \
+      | grep -E '^[0-9]+$' | sort -u || true
+  else
+    lsof -ti "tcp:$1" 2>/dev/null || true
+  fi
+}
+
+# Kill a whole process tree; $2 non-empty forces it.
+_kill_tree() {
+  local pid="$1" force="${2:-}"
+  [[ -z "$pid" ]] && return 0
+  if [[ "${OS:-}" == "Windows_NT" ]]; then
+    if [[ -n "$force" ]]; then taskkill //PID "$pid" //T //F >/dev/null 2>&1 || true
+    else taskkill //PID "$pid" //T >/dev/null 2>&1 || true; fi
+  else
+    if [[ -n "$force" ]]; then kill -9 "$pid" 2>/dev/null || true
+    else kill "$pid" 2>/dev/null || true; fi
+  fi
+}
+
+
+# `dev.sh --stop`: tear the dev runtime down and exit. Handled here, before the detach
+# decision, so the flag is never forwarded to the worker as a runtime argument.
+if [[ "${1:-}" == "--stop" ]]; then
+  _stopped=0
+  for _pass in '' force; do
+    while IFS= read -r _pid; do
+      [[ -z "$_pid" ]] && continue
+      _kill_tree "$_pid" "$_pass"
+      _stopped=1
+    done < <(_dev_worker_pids)
+    while IFS= read -r _pid; do
+      [[ -z "$_pid" ]] && continue
+      _kill_tree "$_pid" "$_pass"
+      _stopped=1
+    done < <(_port_listener_pids "${DEV_PORT}")
+    [[ -z "$(_dev_worker_pids)$(_port_listener_pids "${DEV_PORT}")" ]] && break
+    sleep 0.5
+  done
+  rm -f "${DEV_DIR}/dev.pid"
+  if (( _stopped )); then echo "[dev.sh] dev runtime stopped"; else echo "[dev.sh] nothing to stop"; fi
+  exit 0
+fi
+
 # Dev mode must stay on the local source tree.
 # Do not hop into the upstream production/self-bootstrap `npx pikiloom@latest` chain.
 mkdir -p "${DEV_DIR}"
@@ -87,7 +152,7 @@ PY
   cat <<EOF
 [dev.sh] detached worker spawned (pid=${_bg_pid}); restart proceeds outside caller's process tree
 [dev.sh]   log:  ${LOG_FILE}     (tail -f to follow)
-[dev.sh]   stop: pkill -f 'tsx src/cli/main.ts --no-daemon'
+[dev.sh]   stop: bash scripts/dev.sh --stop
 [dev.sh]   force foreground next time: PIKILOOM_DEV_FOREGROUND=1 npm run dev
 EOF
   exit 0
@@ -101,30 +166,40 @@ fi
 
 # Kill any previous dev processes (npm -> bash -> tsx -> node tree)
 _killed=0
-# 1) Kill by "tsx src/cli.ts --no-daemon" pattern (the actual node worker)
-if pkill -f 'tsx src/cli/main.ts --no-daemon' 2>/dev/null; then
+# 1) Kill previous dev workers, matched on their tsx command line.
+while IFS= read -r _pid; do
+  [[ -z "$_pid" ]] && continue
+  _kill_tree "$_pid"
   _killed=1
-fi
-# 2) Kill whatever is listening on the dev dashboard port
-_port_pid=$(lsof -ti "tcp:${DEV_PORT}" 2>/dev/null || true)
-if [[ -n "$_port_pid" ]]; then
-  echo "$_port_pid" | xargs kill 2>/dev/null || true
+done < <(_dev_worker_pids)
+
+# 2) Kill whatever else is still listening on the dev dashboard port.
+while IFS= read -r _pid; do
+  [[ -z "$_pid" ]] && continue
+  _kill_tree "$_pid"
   _killed=1
-fi
+done < <(_port_listener_pids "${DEV_PORT}")
+
 if (( _killed )); then
   echo "[dev.sh] killed previous dev process(es), waiting for port ${DEV_PORT} to free..."
   # Bounded wait for the port to actually release, so we always rebind ${DEV_PORT}
   # rather than letting the server drift to ${DEV_PORT}+1 on EADDRINUSE.
-  for _i in $(seq 1 20); do
-    _port_pid=$(lsof -ti "tcp:${DEV_PORT}" 2>/dev/null || true)
+  for _i in $(seq 1 30); do
+    _port_pid=$(_port_listener_pids "${DEV_PORT}" | head -1)
     [[ -z "$_port_pid" ]] && break
-    sleep 0.1
+    sleep 0.2
   done
   # Last resort: force-kill anything still holding the port.
-  if [[ -n "${_port_pid:-}" ]]; then
-    echo "$_port_pid" | xargs kill -9 2>/dev/null || true
-    sleep 0.2
-  fi
+  while IFS= read -r _pid; do
+    [[ -z "$_pid" ]] && continue
+    _kill_tree "$_pid" force
+  done < <(_port_listener_pids "${DEV_PORT}")
+  # And any worker that ignored the polite signal.
+  while IFS= read -r _pid; do
+    [[ -z "$_pid" ]] && continue
+    _kill_tree "$_pid" force
+  done < <(_dev_worker_pids)
+  sleep 0.3
 fi
 rm -f "${DEV_DIR}/dev.pid"
 
