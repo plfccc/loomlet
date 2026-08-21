@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess } from 'node:child_process';
 import { closeSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -6,7 +6,7 @@ import type { AgentDriver, AgentTurnInput, DriverContext, DriverResult, DriverEv
 import type { UniversalUsage, UniversalPlan, UniversalSubAgent } from '../protocol/index.js';
 import { ClaudeWarmPool } from './claude-pool.js';
 import { claudeAnchorResolvable, claudeTranscriptTailAnchor, discoverClaudeNativeSessions, encodeClaudeProjectDir } from './native.js';
-import { attachedFileNote, canLeadProcessGroup, contextPercent, createLineBuffer, imageMimeForFile, parseJsonLine, reapChild, wireAbort } from './shared.js';
+import { attachedFileNote, canLeadProcessGroup, contextPercent, createLineBuffer, imageMimeForFile, parseJsonLine, reapChild, spawnAgentCli, wireAbort } from './shared.js';
 
 // Real driver: shells the local `claude` CLI in stream-json mode and normalizes its
 // events into kernel DriverEvents. Faithful to pikiloom's claude.ts event shapes
@@ -303,7 +303,7 @@ export class ClaudeDriver implements AgentDriver {
           // servers, its tool subprocesses) can be SIGKILLed as one unit if it ever wedges
           // past SIGTERM. Without that they reparent to init — tens of MB each, invisible.
           // Only reapChild's final SIGKILL uses the group; see its doc for why.
-          acquired = spawn(this.bin, args, {
+          acquired = spawnAgentCli(this.bin, args, {
             cwd: input.workdir,
             env: { ...process.env, ...(input.env || {}) },
             stdio: ['pipe', 'pipe', 'pipe'],

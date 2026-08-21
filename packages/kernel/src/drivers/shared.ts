@@ -1,8 +1,55 @@
-import type { ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess, type SpawnOptions } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // Driver-internal helpers shared by the concrete drivers (claude/codex/gemini/acp).
 // NOT part of the public API — nothing here is re-exported by any barrel. Each helper
 // exists because the same code appeared verbatim in 3+ drivers.
+
+/**
+ * spawn() an agent CLI by bare command name, portably.
+ *
+ * On Windows an `npm i -g` package leaves two files side by side: `claude` (a POSIX sh
+ * script, for Git Bash) and `claude.cmd` (the native shim). Neither is directly spawnable
+ * without help — the extension-less script is not a PE image (spawn reports ENOENT), and
+ * since Node 18.20 spawning a .cmd/.bat without a shell is refused outright (EINVAL) as an
+ * argument-injection guard. Every turn then dies as a bare "spawn claude ENOENT".
+ *
+ * So on win32: resolve the command against PATHEXT and, when the winner is a batch shim, run
+ * it as `cmd.exe /d /s /c <shim> <args...>`. That rather than `shell: true` because both end
+ * up in cmd.exe, but shell:true concatenates argv into one command line with no escaping
+ * (Node's DEP0190); spawning cmd.exe ourselves keeps every argument a discrete argv entry.
+ * An absolute path the caller already resolved, or any non-Windows platform, spawns unchanged.
+ */
+export function spawnAgentCli(command: string, args: string[], options: SpawnOptions): ChildProcess {
+  if (process.platform !== 'win32') return spawn(command, args, options);
+
+  const resolved = resolveWindowsCommand(command);
+  if (!/\.(cmd|bat)$/i.test(resolved)) return spawn(resolved, args, options);
+
+  const comspec = process.env.ComSpec || process.env.COMSPEC || 'cmd.exe';
+  return spawn(comspec, ['/d', '/s', '/c', resolved, ...args], { ...options, windowsHide: true });
+}
+
+function resolveWindowsCommand(command: string): string {
+  if (path.extname(command) || command.includes('/') || command.includes('\\')) return command;
+
+  const exts = (process.env.PATHEXT || '.COM;.EXE;.BAT;.CMD')
+    .split(';')
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  for (const dir of String(process.env.PATH || '').split(path.delimiter)) {
+    const base = dir.trim();
+    if (!base) continue;
+    // Extensions first, bare name never: a bare hit here is the sh script we cannot run.
+    for (const ext of exts) {
+      const candidate = path.join(base, `${command}${ext}`);
+      try { if (fs.statSync(candidate).isFile()) return candidate; } catch { /* keep looking */ }
+    }
+  }
+  return command;
+}
 
 /** Stateful newline splitter for a child process' stdout: feed chunks, get complete lines. */
 export function createLineBuffer(): (chunk: Buffer | string) => string[] {

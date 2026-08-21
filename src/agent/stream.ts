@@ -82,7 +82,12 @@ function executableCandidates(cmd: string): string[] {
     .split(';')
     .map(value => value.trim())
     .filter(Boolean);
-  return [cmd, ...pathExt.map(value => `${cmd}${value.toLowerCase()}`)];
+  // PATHEXT variants FIRST, bare name last. npm installs both `claude` (a POSIX
+  // sh script for Git Bash) and `claude.cmd` next to each other; isExecutableFile
+  // says yes to any existing file on win32, so putting the bare name first picks
+  // the sh script — which spawn() without a shell cannot run, and every turn dies
+  // with a bare "spawn claude ENOENT".
+  return [...pathExt.map(value => `${cmd}${value.toLowerCase()}`), cmd];
 }
 
 function resolveAgentBinPath(cmd: string): string | null {

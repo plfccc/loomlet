@@ -1,4 +1,5 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { type ChildProcess } from 'node:child_process';
+import { spawnAgentCli } from './shared.js';
 import { createInterface } from 'node:readline';
 
 // One newline-delimited JSON-RPC client over a child process' stdio — the shared wire
@@ -50,7 +51,7 @@ export class StdioRpcClient {
 
   start(): boolean {
     try {
-      this.proc = spawn(this.opts.command, this.opts.args, {
+      this.proc = spawnAgentCli(this.opts.command, this.opts.args, {
         cwd: this.opts.cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: this.opts.env ? { ...process.env, ...this.opts.env } : process.env,

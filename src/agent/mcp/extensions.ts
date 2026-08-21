@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawnCli } from '../../core/platform.js';
 import { loadUserConfig, saveUserConfig } from '../../core/config/user-config.js';
 import type { McpServerConfig } from '../../core/config/user-config.js';
 import { terminateProcessTree } from '../../core/process-control.js';
@@ -575,7 +575,7 @@ export async function checkMcpHealth(config: McpServerConfig, timeoutMs = 10_000
       resolve(result);
     };
 
-    const child = spawn(config.command!, config.args || [], {
+    const child = spawnCli(config.command!, config.args || [], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, ...config.env },
       detached: process.platform !== 'win32',

@@ -2,7 +2,8 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { execFile, spawn, spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { runCli } from '../../core/platform.js';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import {
@@ -392,7 +393,6 @@ export function _matchPlaywrightMcpProcessCommand(
   return true;
 }
 
-const execFileAsync = promisify(execFile);
 
 const REAP_THROTTLE_MS = 30_000;
 const lastReapAt = new Map<string, number>();
@@ -907,11 +907,11 @@ export async function startMcpBridge(opts: McpBridgeOpts): Promise<McpBridgeHand
       const codexArgs = buildCodexMcpAddArgs(server, codexBearerEnv);
       if (!codexArgs) continue;
       try {
-        await execFileAsync('codex', codexArgs, { timeout: MCP_TIMEOUTS.codexMcpAdd });
+        await runCli('codex', codexArgs, { timeout: MCP_TIMEOUTS.codexMcpAdd });
         codexRegisteredNames.push(server.name);
       } catch {
-        try { await execFileAsync('codex', ['mcp', 'remove', server.name], { timeout: MCP_TIMEOUTS.codexMcpRemove }); } catch {}
-        await execFileAsync('codex', codexArgs, { timeout: MCP_TIMEOUTS.codexMcpAdd });
+        try { await runCli('codex', ['mcp', 'remove', server.name], { timeout: MCP_TIMEOUTS.codexMcpRemove }); } catch {}
+        await runCli('codex', codexArgs, { timeout: MCP_TIMEOUTS.codexMcpAdd });
         codexRegisteredNames.push(server.name);
       }
     }
@@ -944,7 +944,7 @@ export async function startMcpBridge(opts: McpBridgeOpts): Promise<McpBridgeHand
     stop: async () => {
       if (callbackServer) await new Promise<void>(resolve => callbackServer!.close(() => resolve()));
       for (const name of [...codexRegisteredNames].reverse()) {
-        try { await execFileAsync('codex', ['mcp', 'remove', name], { timeout: MCP_TIMEOUTS.codexMcpRemove }); } catch {}
+        try { await runCli('codex', ['mcp', 'remove', name], { timeout: MCP_TIMEOUTS.codexMcpRemove }); } catch {}
       }
       if (configPath) {
         try { fs.rmSync(configPath, { force: true }); } catch {}
