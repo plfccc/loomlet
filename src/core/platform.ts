@@ -57,6 +57,8 @@ export function spawnCli(
   if (!IS_WIN) return spawn(command, args, options);
 
   const resolved = resolveCliPath(command);
+  // No shebang on Windows, so a #!/usr/bin/env node script needs the interpreter named.
+  if (/\.(mjs|cjs|js)$/i.test(resolved)) return spawn(process.execPath, [resolved, ...args], options);
   if (!/\.(cmd|bat)$/i.test(resolved)) return spawn(resolved, args, options);
 
   const comspec = process.env.ComSpec || process.env.COMSPEC || 'cmd.exe';

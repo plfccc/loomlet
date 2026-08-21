@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import path from 'node:path';
 import {
   isRemovableWorkspacePath,
   projectSessionForList,
@@ -58,7 +59,9 @@ describe('projectWorkspacesForDashboard', () => {
     const out = projectWorkspacesForDashboard([], '/repo/current', '2026-07-07T00:00:00.000Z');
     expect(out).toEqual([
       {
-        path: '/repo/current',
+        // The projection resolves the runtime workdir, which on Windows turns a rooted POSIX
+        // path into a drive-qualified one. Resolve the same way instead of hardcoding a form.
+        path: path.resolve('/repo/current'),
         name: 'current',
         order: -1,
         addedAt: '2026-07-07T00:00:00.000Z',

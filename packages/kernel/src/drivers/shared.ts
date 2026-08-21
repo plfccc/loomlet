@@ -19,12 +19,16 @@ import path from 'node:path';
  * it as `cmd.exe /d /s /c <shim> <args...>`. That rather than `shell: true` because both end
  * up in cmd.exe, but shell:true concatenates argv into one command line with no escaping
  * (Node's DEP0190); spawning cmd.exe ourselves keeps every argument a discrete argv entry.
- * An absolute path the caller already resolved, or any non-Windows platform, spawns unchanged.
+ *
+ * A `.mjs`/`.js`/`.cjs` target gets `process.execPath` prepended: Windows has no shebang, so
+ * a `#!/usr/bin/env node` script is not executable there no matter its mode bits. Any other
+ * absolute path the caller resolved, and every non-Windows platform, spawns unchanged.
  */
 export function spawnAgentCli(command: string, args: string[], options: SpawnOptions): ChildProcess {
   if (process.platform !== 'win32') return spawn(command, args, options);
 
   const resolved = resolveWindowsCommand(command);
+  if (/\.(mjs|cjs|js)$/i.test(resolved)) return spawn(process.execPath, [resolved, ...args], options);
   if (!/\.(cmd|bat)$/i.test(resolved)) return spawn(resolved, args, options);
 
   const comspec = process.env.ComSpec || process.env.COMSPEC || 'cmd.exe';

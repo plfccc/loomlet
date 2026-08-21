@@ -99,19 +99,27 @@ describe('process-control restart flow', () => {
       expect(cleanupSpy).toHaveBeenCalledTimes(1);
       expect(exitSpy).toHaveBeenCalledWith(0);
       expect(spawnMock).toHaveBeenCalledTimes(1);
-      expect(spawnMock).toHaveBeenCalledWith(
-        'npx',
-        ['--yes', 'tsx', 'src/cli.ts', '--no-daemon', '-c', 'telegram'],
-        expect.objectContaining({
-          stdio: 'inherit',
-          detached: true,
-          env: expect.objectContaining({
-            TELEGRAM_ALLOWED_CHAT_IDS: '1001',
-            FEISHU_ALLOWED_CHAT_IDS: 'ou_abc',
-            npm_config_yes: 'true',
-          }),
+      const [spawnedBin, spawnedArgs, spawnedOpts] = spawnMock.mock.calls[0] as [string, string[], any];
+      // How the launcher is named is platform detail — spawnCli resolves `npx` to npx.cmd on
+      // Windows and runs it via cmd.exe. What must hold is that the relaunch carries the same
+      // argv and environment through.
+      const relaunchArgs = ['--yes', 'tsx', 'src/cli.ts', '--no-daemon', '-c', 'telegram'];
+      if (process.platform === 'win32') {
+        expect(`${spawnedBin} ${spawnedArgs.join(' ')}`).toContain('npx');
+        expect(spawnedArgs.slice(-relaunchArgs.length)).toEqual(relaunchArgs);
+      } else {
+        expect(spawnedBin).toBe('npx');
+        expect(spawnedArgs).toEqual(relaunchArgs);
+      }
+      expect(spawnedOpts).toEqual(expect.objectContaining({
+        stdio: 'inherit',
+        detached: true,
+        env: expect.objectContaining({
+          TELEGRAM_ALLOWED_CHAT_IDS: '1001',
+          FEISHU_ALLOWED_CHAT_IDS: 'ou_abc',
+          npm_config_yes: 'true',
         }),
-      );
+      }));
       const env = spawnMock.mock.calls[0]?.[2]?.env ?? {};
       expect(env.PIKILOOM_DAEMON_CHILD).toBeUndefined();
       expect(env.PIKILOOM_RESTART_STATE_FILE).toBeUndefined();

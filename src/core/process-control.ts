@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { pathContainsSegment } from './platform.js';
+import { pathContainsSegment, spawnCli } from './platform.js';
 import { STATE_DIR_NAME } from './constants.js';
 
 export const PROCESS_RESTART_EXIT_CODE = 75;
@@ -152,10 +152,17 @@ function readProcessParentMap(): Map<number, number[]> {
   try {
     const rows: Array<{ pid: number; ppid: number }> = [];
     if (process.platform === 'win32') {
-      const out = execFileSync('wmic', ['process', 'get', 'ParentProcessId,ProcessId'], { encoding: 'utf8', windowsHide: true });
+      // Emits "<pid> <ppid>" per line, same column order as `ps -Ao pid=,ppid=` below — the
+      // wmic call this replaced printed ParentProcessId FIRST, so anything feeding both
+      // branches the same table (the unit test did) had every parent/child pair reversed and
+      // walked a tree that did not exist. wmic is also deprecated and on its way out.
+      const out = execFileSync('powershell', [
+        '-NoProfile', '-Command',
+        'Get-CimInstance Win32_Process | ForEach-Object { "$($_.ProcessId) $($_.ParentProcessId)" }',
+      ], { encoding: 'utf8', windowsHide: true });
       for (const line of out.split(/\r?\n/)) {
         const m = line.trim().match(/^(\d+)\s+(\d+)$/);
-        if (m) rows.push({ ppid: Number(m[1]), pid: Number(m[2]) });
+        if (m) rows.push({ pid: Number(m[1]), ppid: Number(m[2]) });
       }
     } else {
       const out = execFileSync('ps', ['-Ao', 'pid=,ppid='], { encoding: 'utf8' });
@@ -291,11 +298,12 @@ function buildRestartEnvForSpawn(extraEnv: Record<string, string>) {
 }
 
 function spawnReplacementProcess(bin: string, args: string[], env: Record<string, string>, log?: (message: string) => void) {
-  const needsShell = process.platform === 'win32' && !bin.endsWith('node.exe');
-  const child = spawn(needsShell ? `"${bin}"` : bin, args, {
+  // spawnCli resolves the Windows shim and picks the right launcher, so the quote-the-bin
+  // plus shell:true dance this used to do is gone — with it the argv concatenation that
+  // shell:true implies (Node's DEP0190), which mattered here because args carry the workdir.
+  const child = spawnCli(bin, args, {
     stdio: 'inherit',
     detached: true,
-    shell: needsShell || undefined,
     env,
     cwd: process.cwd(),
   });
