@@ -7,8 +7,17 @@ export const IS_WIN = process.platform === 'win32';
 export const IS_MAC = process.platform === 'darwin';
 export const IS_LINUX = process.platform === 'linux';
 
+/**
+ * Home directory, honouring an explicit $HOME override.
+ *
+ * os.homedir() reads USERPROFILE on Windows and ignores HOME entirely, so a test (or a
+ * sandbox) that redirects HOME to a temp dir still gets the real profile there. Tests that
+ * did exactly that were writing fixtures into the user's real ~/.loomlet and accumulating
+ * them across runs, which is what made several suites fail only on Windows.
+ */
 export function getHome(): string {
-  return os.homedir();
+  const override = String(process.env.HOME || '').trim();
+  return override || os.homedir();
 }
 
 export function expandTilde(p: string): string {

@@ -21,7 +21,7 @@ describe('importFilesIntoWorkspace', () => {
     const linkRoot = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'imp-link-'));
     cleanup.push(linkRoot);
     const wsViaLink = path.join(linkRoot, 'ws-link');
-    fs.symlinkSync(ws, wsViaLink);
+    fs.symlinkSync(ws, wsViaLink, process.platform === 'win32' ? 'junction' : 'dir');
 
     const result = importFilesIntoWorkspace(wsViaLink, [path.join(wsViaLink, 'pic.png')]);
 

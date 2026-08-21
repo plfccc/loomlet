@@ -110,7 +110,7 @@ describe('durable session promotions', () => {
     saveSessionRecord(workdir, native);
 
     const pendingDir = path.join(workdir, '.loomlet', 'sessions', 'claude', 'pending_legacy0000');
-    fs.symlinkSync('native-legacy', pendingDir, 'dir');
+    fs.symlinkSync('native-legacy', pendingDir, process.platform === 'win32' ? 'junction' : 'dir');
     expect(getSessionPromotions(workdir)['claude:pending_legacy0000']).toBeUndefined();
 
     expect(resolveCanonicalSessionId(workdir, 'claude', 'pending_legacy0000')).toBe('native-legacy');

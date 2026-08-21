@@ -92,17 +92,24 @@ describe('project skills', () => {
       const workdir = makeTmpDir('pikiloom-relink-skill-');
       const claudeSkills = path.join(workdir, '.claude', 'skills');
       fs.mkdirSync(path.dirname(claudeSkills), { recursive: true });
-      fs.symlinkSync('../.pikiclaw/skills', claudeSkills, 'dir');
+      fs.symlinkSync('../.pikiclaw/skills', claudeSkills, process.platform === 'win32' ? 'junction' : 'dir');
       expect(fs.existsSync(claudeSkills)).toBe(false);
 
       initializeProjectSkills(workdir);
 
-      expect(fs.lstatSync(claudeSkills).isSymbolicLink()).toBe(true);
-      expect(fs.readlinkSync(claudeSkills)).toBe(path.join('..', '.loomlet', 'skills'));
-      expect(fs.realpathSync(claudeSkills)).toBe(fs.realpathSync(path.join(workdir, '.loomlet', 'skills')));
+      // A win32 junction can only store an absolute target, so assert on where the link
+      // resolves to; only POSIX keeps the relative form the writer passed in.
+      const expectRelinked = () => {
+        expect(fs.realpathSync(claudeSkills)).toBe(fs.realpathSync(path.join(workdir, '.loomlet', 'skills')));
+        if (process.platform !== 'win32') {
+          expect(fs.lstatSync(claudeSkills).isSymbolicLink()).toBe(true);
+          expect(fs.readlinkSync(claudeSkills)).toBe(path.join('..', '.loomlet', 'skills'));
+        }
+      };
+      expectRelinked();
 
       initializeProjectSkills(workdir);
-      expect(fs.readlinkSync(claudeSkills)).toBe(path.join('..', '.loomlet', 'skills'));
+      expectRelinked();
     }
 
     {
