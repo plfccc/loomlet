@@ -41,9 +41,40 @@ const fakeBin = path.join(tmpDir, 'bin');
 
 function writeFakeScript(name: string, jsonLines: object[]) {
   const payload = jsonLines.map(j => JSON.stringify(j)).join('\n');
+  if (process.platform === 'win32') {
+    // No shebang on Windows: emit the payload from a .cmd, which is what PATHEXT resolution
+    // finds. Kept as `echo` lines rather than a heredoc since cmd has no equivalent.
+    const echoes = payload.split('\n').map(line => `@echo ${cmdEscape(line)}`).join('\r\n');
+    fs.writeFileSync(path.join(fakeBin, `${name}.cmd`), `@echo off\r\n${echoes}\r\n`);
+    return;
+  }
   const script = `#!/bin/sh\ncat <<'JSONL_EOF'\n${payload}\nJSONL_EOF\n`;
-  const p = path.join(fakeBin, name);
-  fs.writeFileSync(p, script, { mode: 0o755 });
+  fs.writeFileSync(path.join(fakeBin, name), script, { mode: 0o755 });
+}
+
+/** Quote a JSON line for cmd's `echo`: ^ escapes the shell metacharacters it would eat. */
+function cmdEscape(line: string): string {
+  return line.replace(/[\^&<>|()]/g, m => `^${m}`);
+}
+
+/**
+ * Install a shebang fake so both platforms can launch it. Windows has no shebang support, so
+ * the body goes to a sidecar file and a .cmd (what PATHEXT resolution finds) invokes the right
+ * interpreter — node for `#!/usr/bin/env node`, Git Bash's sh for `#!/bin/sh`.
+ */
+function writeFakeAgent(name: string, body: string) {
+  if (process.platform !== 'win32') {
+    fs.writeFileSync(path.join(fakeBin, name), body, { mode: 0o755 });
+    return;
+  }
+  const isNode = /^#!.*\bnode\b/.test(body);
+  const ext = isNode ? 'mjs' : 'sh';
+  fs.writeFileSync(path.join(fakeBin, `${name}.${ext}`), body.replace(/\r?\n/g, '\n'));
+  const runner = isNode ? 'node' : 'sh';
+  fs.writeFileSync(
+    path.join(fakeBin, `${name}.cmd`),
+    `@echo off\r\n${runner} "%~dp0${name}.${ext}" %*\r\n`,
+  );
 }
 
 function baseOpts(agent: 'codex' | 'claude', extra: Partial<StreamOpts> = {}): StreamOpts {
@@ -62,7 +93,9 @@ function baseOpts(agent: 'codex' | 'claude', extra: Partial<StreamOpts> = {}): S
 
 beforeEach(() => {
   fs.mkdirSync(fakeBin, { recursive: true });
-  process.env.PATH = `${fakeBin}:${process.env.PATH}`;
+  // path.delimiter, not ':' — Windows separates PATH entries with ';', so a hardcoded colon
+  // silently produced one unusable entry and the fakes were never found.
+  process.env.PATH = `${fakeBin}${path.delimiter}${process.env.PATH}`;
   process.env.PIKILOOM_CLAUDE_PRINT = '1';
   shutdownCodexServer();
 });
@@ -537,7 +570,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     const result = await doCodexStream(baseOpts('codex', {
       sessionId: 'thread-existing',
@@ -628,7 +661,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script2, { mode: 0o755 });
+    writeFakeAgent('codex', script2);
 
     const plans: any[] = [];
     const activities: string[] = [];
@@ -724,7 +757,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script3, { mode: 0o755 });
+    writeFakeAgent('codex', script3);
 
     const previewMeta: Array<{ contextPercent: number | null } | undefined> = [];
     const result3 = await doCodexStream(baseOpts('codex', {
@@ -817,7 +850,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     const previews: string[] = [];
     const activities: string[] = [];
@@ -899,7 +932,7 @@ rl.on('line', (line) => {
 
   flush({ id: msg.id, error: { message: 'unexpected method' } });
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script2, { mode: 0o755 });
+    writeFakeAgent('codex', script2);
 
     const startedAt = Date.now();
     const [first, second] = await Promise.all([
@@ -1017,7 +1050,7 @@ else
   echo '${JSON.stringify({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Fresh start' } } })}'
   echo '${JSON.stringify({ type: 'result', session_id: 'new-sess', usage: { input_tokens: 10, output_tokens: 5 } })}'
 fi`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), retryScript, { mode: 0o755 });
+    writeFakeAgent('claude', retryScript);
 
     const retried = await doClaudeStream(baseOpts('claude', { sessionId: 'old-sess' }));
     expect(retried.ok).toBe(true);
@@ -1050,14 +1083,14 @@ echo '${JSON.stringify({ type: 'system', session_id: 's-partial' })}'
 echo '${JSON.stringify({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Partial answer' } } })}'
 echo "quota exceeded" >&2
 exit 1`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), partialScript, { mode: 0o755 });
+    writeFakeAgent('claude', partialScript);
     const partial = await doClaudeStream(baseOpts('claude'));
     expect(partial.ok).toBe(false);
     expect(partial.message).toBe('Partial answer');
     expect(partial.error).toBe('quota exceeded');
     expect(partial.incomplete).toBe(true);
 
-    fs.writeFileSync(path.join(fakeBin, 'claude'), '#!/bin/sh\nexit 0', { mode: 0o755 });
+    writeFakeAgent('claude', '#!/bin/sh\nexit 0');
     const empty = await doClaudeStream(baseOpts('claude'));
     expect(empty.ok).toBe(true);
     expect(empty.message).toBe('(no textual response)');
@@ -1407,7 +1440,7 @@ rl.on('line', (line) => {
   }, 220);
 });
 rl.on('close', () => setTimeout(() => process.exit(0), 30));`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), script, { mode: 0o755 });
+    writeFakeAgent('claude', script);
 
     let steer: ((prompt: string, attachments?: string[]) => Promise<boolean>) | null = null;
     const streamPromise = doClaudeStream(baseOpts('claude', {
@@ -1476,7 +1509,7 @@ rl.on('line', (line) => {
   }, 120);
 });
 rl.on('close', () => process.exit(0));`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), script, { mode: 0o755 });
+    writeFakeAgent('claude', script);
 
     let steer: ((prompt: string, attachments?: string[]) => Promise<boolean>) | null = null;
     const streamPromise = doClaudeStream(baseOpts('claude', {
@@ -1553,7 +1586,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     let reportedSessionId: string | null = null;
     const streamPromise = doCodexStream(baseOpts('codex', {
@@ -1633,7 +1666,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     let control: { turnId: string; steer: (prompt: string, attachments?: string[]) => Promise<boolean> } | null = null;
     const streamPromise = doCodexStream(baseOpts('codex', {
@@ -1707,7 +1740,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     const result = await doCodexStream(baseOpts('codex'));
     expect(result.ok).toBe(true);
@@ -1762,7 +1795,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     const result = await doStream(baseOpts('codex', { prompt: '给我讲故事' }));
     expect(result.ok).toBe(true);
@@ -1822,7 +1855,7 @@ rl.on('line', (line) => {
 
   process.stdout.write(JSON.stringify({ id: msg.id, error: { message: 'unexpected method' } }) + '\\n');
 });`;
-    fs.writeFileSync(path.join(fakeBin, 'codex'), script, { mode: 0o755 });
+    writeFakeAgent('codex', script);
 
     let reportedSessionId: string | null = null;
     const streamPromise = doStream(baseOpts('codex', {
@@ -1866,7 +1899,7 @@ echo '${JSON.stringify({ type: 'system', session_id: 'sess-status' })}'
 echo '${JSON.stringify({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: 'partial answer' } } })}'
 echo "quota exceeded" >&2
 exit 1`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), partialScript, { mode: 0o755 });
+    writeFakeAgent('claude', partialScript);
 
     const incomplete = await doStream(baseOpts('claude', { sessionId: 'sess-status', prompt: 'second pass' }));
     expect(incomplete.ok).toBe(false);
@@ -1908,7 +1941,7 @@ cat > ${stdinFile}
 echo '{"type":"system","session_id":"s-file"}'
 echo '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}}'
 echo '{"type":"result","session_id":"s-file"}'`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), attachmentScript, { mode: 0o755 });
+    writeFakeAgent('claude', attachmentScript);
 
     const imgPath = path.join(tmpDir, 'test.png');
     fs.writeFileSync(imgPath, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64'));
@@ -1939,7 +1972,7 @@ echo "$@" > ${emptyArgsFile}
 echo '{"type":"system","session_id":"s-no"}'
 echo '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}}'
 echo '{"type":"result","session_id":"s-no"}'`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), emptyScript, { mode: 0o755 });
+    writeFakeAgent('claude', emptyScript);
 
     const withoutAttachments = await doClaudeStream(baseOpts('claude', { attachments: [] }));
     expect(withoutAttachments.ok).toBe(true);
@@ -1952,7 +1985,7 @@ echo '{"type":"result","session_id":"s-no"}'`;
 echo "$@" > ${argsFile}
 echo '{"type":"system","session_id":"s-wf"}'
 echo '{"type":"result","session_id":"s-wf"}'`;
-    fs.writeFileSync(path.join(fakeBin, 'claude'), script, { mode: 0o755 });
+    writeFakeAgent('claude', script);
 
     const off = await doClaudeStream(baseOpts('claude', { prompt: 'a' }));
     expect(off.ok).toBe(true);
@@ -2024,7 +2057,7 @@ EOF
   exit 0
 fi
 exit 0`;
-      fs.writeFileSync(path.join(fakeBin, 'claude'), helpScript, { mode: 0o755 });
+      writeFakeAgent('claude', helpScript);
 
       const claudeModels = await listModels('claude', {
         workdir: tmpDir,
